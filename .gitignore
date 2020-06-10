@@ -1,0 +1,11 @@
+# Temporary files
+.vscode/**
+
+# Compiled object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Executables
+bin/**
