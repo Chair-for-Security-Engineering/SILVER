@@ -1,11 +1,11 @@
-in 0 0:0 # a0
-in 1 0:1 # a1
-in 2 0:2 # a2
-in 3 0:3 # a3
-in 4 1:0 # b0
-in 5 1:1 # b1
-in 6 1:2 # b2
-in 7 1:3 # b3
+in 0 0_0 # a0
+in 1 0_1 # a1
+in 2 0_2 # a2
+in 3 0_3 # a3
+in 4 1_0 # b0
+in 5 1_1 # b1
+in 6 1_2 # b2
+in 7 1_3 # b3
 ref 8  # r0
 ref 9  # r1
 ref 10 # r2

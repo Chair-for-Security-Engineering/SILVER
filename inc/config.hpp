@@ -20,7 +20,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Please see license.rtf and README for license and further instructions.
+ * Please see LICENSE and README for license and further instructions.
  */
 
 #ifndef __SILVER_CONFIG_HPP_
@@ -31,9 +31,23 @@
 
 /* Specify number of cores (0 for auto-detect) and RAM (in Byte) used by Sylvan BDD library */
 #define CORES 0
-#define MEMORY 128*1024*1024*1024ull
+#define MEMORY 1*1024*1024*1024ull
 
-/* Enable/Disable detailed test reporting */
+/* Enable (1) / disable (0) detailed test reporting */
 #define VERBOSE 1
+
+/* Enable (defined) / disable (undefined) verilog design parsing */
+#define VERILOG
+
+/* Instruction list (either externally provided or result of verilog parser) */
+#define INSFILE "test/aes/aes_sbox_dom1.nl"
+
+/* If VERILOG is defined, specify verilog design details here */
+#ifdef VERILOG
+#define LIBFILE "cell/Library.txt"
+#define LIBNAME "NANG45"
+#define DESIGN  "vlog/aes/aes_sbox_dom1.v"
+#define MODULE  "aes_sbox"
+#endif
 
 #endif // __SILVER_CONFIG_HPP_

@@ -1,9 +1,13 @@
+# Table of Contents
+
+[[_TOC_]]
+
 # SILVER - Statistical Independence and Leakage Verification
 
 This repository contains the source code for the paper [SILVER - Statistical Independence and Leakage Verification](https://eprint.iacr.org/2020/634.pdf). 
 
 ## Features
-SILVER is a framework written in C++ which particulary relies on Reduced Ordered Binary Decision Diagrams (ROBDDs) and the concept of statistical independence of probability distributions. This framework allows to analyze and verify masked implementations against the following security notions (using different security models as reference):
+SILVER is a framework written in C++ which particulary relies on Reduced Ordered Binary Decision Diagrams (ROBDDs) and the concept of statistical independence of probability distributions. This framework allows to analyze and verify masked implementations (given as verilog design or instruction list) against the following security notions (using different security models as reference):
 - Probing Security (standard / robust model)
 - Non-Interference Security (standard / robust model)
 - Strong Non-Interference Security (standard / robust model)
@@ -24,33 +28,100 @@ Please follow the instructions below to build the SILVER framework:
 6. `make release`
 
 ## Quick Start
-Build the SILVER framework using the instructions above. You can configure the framework in `/inc/config.hpp` to specify the number of cores and RAM used by Sylvan. Specify your Design Under Test (DUT) in `/src/verify.cpp` or use one of our examples provided in `/test/`.
+Build the SILVER framework using the instructions above. You can configure the framework in `/inc/config.hpp` to specify the number of cores and RAM used by Sylvan. Besides, you can enable Verilog parsing or parse instruction files directly (cf. examples in `test/`). If Verilog parsing is enabled, please specify necessary parameters in `/inc/config.hpp` and describe your cell library used during synthesis in `cell/` (example given for constrained NANG45).
 
 1. `make release`
 2. `./bin/verify`
 
-Examplary output for `/test/dom/dom1.nl` with `VERBOSE 1`:
+Examplary output for `/test/dom/dom1.nl` (instruction file) with `VERBOSE 1`:
 
 ```
 [     0.000] Netlist: test/dom/dom1.nl
-[     0.001] Parse: 19 gate(s) / 22 signal(s)
-[     0.002] Elaborate: 19 gate(s) / 22 signal(s)
-[     0.005] probing.standard (d ≤ 1) -- PASS.  >> Probes: <in:1,in:0>
-[     0.006] probing.robust   (d ≤ 1) -- PASS.  >> Probes: <in:1,in:0>
-[     0.008] NI.standard      (d ≤ 1) -- PASS.  >> Probes: <in:1,in:0>
-[     0.009] NI.robust        (d ≤ 1) -- PASS.  >> Probes: <in:1,in:0>
-[     0.010] SNI.standard     (d ≤ 1) -- PASS.  >> Probes: <in:1,in:0>
-[     0.010] SNI.robust       (d ≤ 1) -- FAIL.  >> Probes: <out:17>
-[     0.010] PINI.standard    (d ≤ 1) -- FAIL.  >> Probes: <and:5>
-[     0.010] PINI.robust      (d ≤ 1) -- FAIL.  >> Probes: <reg:13>
-[     0.011] uniformity               -- PASS.
+[     0.000] Parse: 19 gate(s) / 22 signal(s)
+[     0.001] Elaborate: 19 gate(s) / 22 signal(s)
+[     0.003] probing.standard (d ≤ 1) -- PASS.  >> Probes: <in:line2,in:line1>
+[     0.004] probing.robust   (d ≤ 1) -- PASS.  >> Probes: <in:line2,in:line1>
+[     0.006] NI.standard      (d ≤ 1) -- PASS.  >> Probes: <in:line2,in:line1>
+[     0.006] NI.robust        (d ≤ 1) -- PASS.  >> Probes: <in:line2,in:line1>
+[     0.006] SNI.standard     (d ≤ 1) -- PASS.  >> Probes: <in:line2,in:line1>
+[     0.007] SNI.robust       (d ≤ 1) -- FAIL.  >> Probes: <out:line18>
+[     0.007] PINI.standard    (d ≤ 1) -- FAIL.  >> Probes: <and:line6>
+[     0.007] PINI.robust      (d ≤ 1) -- FAIL.  >> Probes: <reg:line14>
+[     0.007] uniformity               -- PASS.
 ```
 
+## Verilog annotations
+
+The verification of all security notions implemented in SILVER is based on the correct identification of secret and random inputs. For this, SILVER expects additional annotations on any secret input and output signal indicating the corresponding sharing properties. Any other (non-secret) signal is considered as random.
+
+### Verilog attribute syntax
+
+If verilog parsing is enabled, the parser will take care of the correct annotations for the internal circuit representation used by SILVER. However, for this, all input and output signals of the verilog module have to be annotated using custom attributes. In general, the annotation should use the following verilog syntax:
+
+```
+(* attribute *) input inputname;
+/* ... */
+
+(* attribute *) output outputname;
+/* ... */
+```
+
+### SILVER attributes
+
+In particular, the verilog parser will any attribute preceded by the SILVER keyword, i.e., follwing the syntax: `(* SILVER="attribute" *)`. In addition, the following different attributes are defined and recognized by the parser:
+
+| attribute | description |
+| --------- | ----------- |
+| *clock*         | Keyword for identification of clock signals. |
+| *control*       | Keyword for identification of control signals. |
+| *refresh*       | Keyword for identification of fresh mask signals (i.e., random signals). |
+| *Vn_Sn*         | Keyword for identification of a single shared signal (with Vn the variable number and Sn the share number) |
+| *[Vn:Vm]_Sn*    | Keyword for identification of a shared vector with Vn to Vm -- either ascending or descending --  the variable numbers and Sn the share number) |
+| *Vn_[Sn:Sm]*    | Keyword for identification of a shared vector with Vn the variable number and Sn to Sm -- either ascending or descending --  the share numbers) |
+
+### Examples
+
+In addition, different combination of the attributes are supported as well, for example:
+
+```
+(* SILVER="[3:0]_0" *)         input [3:0]  sboxIn1;
+(* SILVER="[3:0]_1" *)         input [0:3]  sboxIn2;
+(* SILVER="3_2,2_2,1_2,0_2" *) input [3:0]  sboxIn3;
+(* SILVER="[3:0]_0" *)         output [3:0] share1;
+(* SILVER="[3:2]_1,[1:0]_1" *) output [3:0] share2;
+(* SILVER="3_2,[2:1]_2,0_2" *) output [3:0] share3;
+(* SILVER="refresh" *)         input mask;
+(* SILVER="clock" *)           input clk;
+(* SILVER="control" *)         input rst;
+```
+
+## Troubleshooting
+
+Here are some common issues you may encounter during execution along with possible fixes.
+
+### Shared libraries (libsylvan.so)
+In case you get an error message similar to: 
+
+```
+./bin/verify: error while loading shared libraries: libsylvan.so: cannot open shared object file: No such file or directory
+```
+
+please export the `/lib` directory to your linker library path, e.g., using `export LD_LIBRARY_PATH=``pwd``/lib` before executing the binary.
+
+### Cache creation (memory allocation)
+In case you get an error message similar to: 
+
+```
+cache_create: Unable to allocate memory: Cannot allocate memory!
+```
+
+please decrease the memory size provided in `inc/config.hpp` according to your available system memory.
+
 ## Licensing
-Copyright (c) 2020, Pascal Sasdrich.
+Copyright (c) 2020, Pascal Sasdrich, Amir Moradi (verilogParser.h).
 All rights reserved.
 
-Please see `license.rtf` for further license instructions.
+Please see `LICENSE` for further license instructions.
 
 ## Publications
 D. Knichel, P. Sasdrich, A. Moradi (2020): [SILVER - Statistical Independence and Leakage Verification](https://eprint.iacr.org/2020/634.pdf)

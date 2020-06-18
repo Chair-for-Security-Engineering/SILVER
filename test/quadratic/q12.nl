@@ -1,11 +1,11 @@
-in 0 0:0 # a1
-in 1 1:0 # b1
-in 2 2:0 # c1
-in 3 3:0 # d1
-in 4 0:1 # a2
-in 5 1:1 # b2
-in 6 2:1 # c2
-in 7 3:1 # d2
+in 0 0_0 # a1
+in 1 1_0 # b1
+in 2 2_0 # c1
+in 3 3_0 # d1
+in 4 0_1 # a2
+in 5 1_1 # b2
+in 6 2_1 # c2
+in 7 3_1 # d2
 and 0 1 # a1b1
 and 0 5 # a1b2
 and 4 1 # a2b1
@@ -38,11 +38,11 @@ reg 0
 reg 3
 reg 4
 reg 7
-out 36 0:0
-out 32 1:0
-out 34 2:0
-out 37 3:0
-out 38 0:1
-out 33 1:1
-out 35 2:1
-out 39 3:1
+out 36 0_0
+out 32 1_0
+out 34 2_0
+out 37 3_0
+out 38 0_1
+out 33 1_1
+out 35 2_1
+out 39 3_1

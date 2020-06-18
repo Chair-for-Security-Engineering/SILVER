@@ -20,11 +20,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Please see license.rtf and README for license and further instructions.
+ * Please see LICENSE and README for license and further instructions.
  */
 
 #include "config.hpp"
 #include "Silver.hpp"
+
+#ifdef VERILOG
+#include "parser/verilogParser.h"
+#endif
 
 #include <chrono>
 #include <iomanip>
@@ -59,10 +63,16 @@ int main (int argc, char * argv[]) {
     sylvan::sylvan_init_mtbdd();
 
     /* Extract Designs Under Test */
-    std::string dut = "test/dom/dom1.nl";
+    std::string dut = INSFILE;
 
     /* Start time tracking */
     start = std::chrono::high_resolution_clock::now();
+
+    /* Parse & convert verilog design to instruction list */
+#ifdef VERILOG
+    int res = parse_and_convert_wrapper(LIBFILE, LIBNAME, DESIGN, MODULE, INSFILE);
+    if (res) { std::cout << "Verilog design parsing failed." << std::endl; return res; }
+#endif
 
     /* Parse circuit from text file*/
     INFO("Netlist: " + dut + "\n");
@@ -119,8 +129,8 @@ int main (int argc, char * argv[]) {
     /* Robust strong non-interference */
     probes = Silver::check_SNI(model, inputs, order, true);
 
-    if (probes.size() > order)  INFO("SNI.robust       (d \u2264 " + str(order) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("SNI.robust       (d \u2264 " + str(order) + ") -- \033[1;31mFAIL\033[0m.");
+    if (probes.size() - 1 != 0) INFO("SNI.robust       (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+    else                        INFO("SNI.robust       (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
     
     /* Standard probe-isolating non-interference */

@@ -1,0 +1,96 @@
+%%%%%%  library file %%%%%%%
+% usage:
+%
+% Library
+% library_name
+%
+% Type of the cell: Gate/Reg
+%
+% # of its variants
+% variant names
+%
+% name of the cell in BBD program
+%
+% # of inputs
+% input names
+%
+% # of outputs
+% output names
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Library
+NANG45
+
+Gate
+2
+INV_X1 INV_X2
+not
+1
+A
+1
+ZN
+
+Gate
+2
+XNOR2_X1 XNOR2_X2
+xnor
+2
+A B
+1
+ZN
+
+Gate
+2
+XOR2_X1 XOR2_X2
+xor
+2
+A B
+1
+Z
+
+Gate
+2
+NOR2_X1 NOR2_X2
+nor
+2
+A1 A2
+1
+ZN
+
+Gate
+1
+OR2_X1
+or
+2
+A1 A2
+1
+ZN
+
+Gate
+1
+NAND2_X1
+nand
+2
+A1 A2
+1
+ZN
+
+Gate
+1
+AND2_X1
+and
+2
+A1 A2
+1
+ZN
+
+Reg
+1
+DFF_X1
+reg
+2
+D CK
+2
+Q QN
+

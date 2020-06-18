@@ -1,9 +1,9 @@
-in 0 0:0 # a0
-in 1 0:1 # a1
-in 2 0:2 # a2
-in 3 1:0 # b0
-in 4 1:1 # b1
-in 5 1:2 # b2
+in 0 0_0 # a0
+in 1 0_1 # a1
+in 2 0_2 # a2
+in 3 1_0 # b0
+in 4 1_1 # b1
+in 5 1_2 # b2
 ref 6
 ref 7
 ref 8

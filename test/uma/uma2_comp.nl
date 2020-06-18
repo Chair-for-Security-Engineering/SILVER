@@ -1,9 +1,9 @@
-in 0 0:0 # x0
-in 1 0:1 # x1
-in 2 0:2 # x2
-in 3 1:0 # b0
-in 4 1:1 # b1
-in 5 1:2 # b2
+in 0 0_0 # x0
+in 1 0_1 # x1
+in 2 0_2 # x2
+in 3 1_0 # b0
+in 4 1_1 # b1
+in 5 1_2 # b2
 ref 6 # r0
 ref 7 # r1
 xor 7 6 # r

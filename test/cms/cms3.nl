@@ -1,11 +1,11 @@
-in 0 0:0
-in 1 0:1
-in 2 0:2
-in 3 0:3
-in 4 1:0
-in 5 1:1
-in 6 1:2
-in 7 1:3
+in 0 0_0
+in 1 0_1
+in 2 0_2
+in 3 0_3
+in 4 1_0
+in 5 1_1
+in 6 1_2
+in 7 1_3
 ref 8 # r1
 ref 9 # r2
 ref 10 # r3
@@ -98,7 +98,7 @@ xor 89 88 # a[0]b + r1 + r5
 xor 91 90 # a[1]b + r5 + r9
 xor 93 92 # a[2]b + r9 + r13
 xor 95 94 # a[3]b + r13 + r1
-out 96 0:0
-out 97 0:1
-out 98 0:2
-out 99 0:3
+out 96 0_0
+out 97 0_1
+out 98 0_2
+out 99 0_3

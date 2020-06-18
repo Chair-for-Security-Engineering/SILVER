@@ -20,7 +20,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Please see license.rtf and README for license and further instructions.
+ * Please see LICENSE and README for license and further instructions.
  */
 
 #ifndef __UTIL_HPP_

@@ -20,7 +20,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Please see license.rtf and README for license and further instructions.
+ * Please see LICENSE and README for license and further instructions.
  */
 
 #include <util.hpp>
@@ -64,7 +64,7 @@ Silver::parse(const std::string filePath)
 
         if (model[node].getType() == "in" || model[node].getType() == "reg" || model[node].getType() == "out") {
             if (tokens.size() > 2 && tokens[2].find("#") != 0) {
-                annotations = split(tokens[2], ':');
+                annotations = split(tokens[2], '_');
                 if (annotations.size() == 2) {
                     model[node].setSharing({std::stoi(annotations[0]),std::stoi(annotations[1])});
                 } else {
@@ -825,7 +825,7 @@ Silver::print_node_vector(const Circuit &model, const std::vector<Node> nodes)
 {
     std::cout << "<";
     for (int n = 0; n < nodes.size(); n++) {
-        std::cout << model[nodes[n]].getType() << ":" << nodes[n];
+            std::cout << model[nodes[n]].getType() << ":line" << nodes[n] + 1;
         if (n != nodes.size() - 1) std::cout << ",";
     }
     std::cout << ">" << std::endl;

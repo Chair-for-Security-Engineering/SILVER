@@ -1,9 +1,9 @@
-in 0 0:0 # a[0]
-in 1 0:1 # a[1]
-in 2 0:2 # a[2]
-ref 3 1:0 # b[0]
-ref 4 1:1 # b[1]
-ref 5 1:2 # b[2]
+in 0 0_0 # a[0]
+in 1 0_1 # a[1]
+in 2 0_2 # a[2]
+ref 3 1_0 # b[0]
+ref 4 1_1 # b[1]
+ref 5 1_2 # b[2]
 ref 6
 ref 7
 ref 8
@@ -51,6 +51,6 @@ and 46 2 # a3(a+z)
 xor 47 36
 xor 48 37
 xor 49 38
-out 50 0:0
-out 51 0:1
-out 52 0:2
+out 50 0_0
+out 51 0_1
+out 52 0_2
