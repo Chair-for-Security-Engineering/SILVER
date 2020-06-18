@@ -1,7 +1,3 @@
-# Table of Contents
-
-[[_TOC_]]
-
 # SILVER - Statistical Independence and Leakage Verification
 
 This repository contains the source code for the paper [SILVER - Statistical Independence and Leakage Verification](https://eprint.iacr.org/2020/634.pdf). 
