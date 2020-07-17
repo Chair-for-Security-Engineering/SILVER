@@ -82,7 +82,7 @@ set_dont_use [get_lib_cells NangateOpenCellLibrary/NAND5*]
 set_dont_use [get_lib_cells NangateOpenCellLibrary/BUF*]
 ```
 
-The flowing commands can be used to force the synthesizer to compile, keep the hierarchy and make a flatten netlist of the design.
+The flowing commands can be used to force the synthesizer to compile, keep the hierarchy and make a flattened netlist of the design.
 
 ```
 compile -map_effort medium -area_effort medium
