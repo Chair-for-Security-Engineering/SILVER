@@ -50,6 +50,46 @@ Examplary output for `/test/dom/dom1.nl` (instruction file) with `VERBOSE 1`:
 
 The verification of all security notions implemented in SILVER is based on the correct identification of secret and random inputs. For this, SILVER expects additional annotations on any secret input and output signal indicating the corresponding sharing properties. Any other (non-secret) signal is considered as random.
 
+### Synthesis
+
+The given examples are based on designs synthesized by NANG45 standard cell library and Synopsis Design Compiler. The following commands (for synthesis script) can be used to restrict the resulting netlist to only those cells which are supported by SILVER.
+
+```
+set_dont_use [get_lib_cells NangateOpenCellLibrary/FA*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/HA*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/AOI*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/OAI*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/MUX*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/CLKBUF*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/OR3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/OR4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/OR5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NOR3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NOR4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NOR5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XNOR3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XNOR4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XNOR5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XOR3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XOR4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/XOR5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/AND3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/AND4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/AND5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NAND3*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NAND4*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/NAND5*]
+set_dont_use [get_lib_cells NangateOpenCellLibrary/BUF*]
+```
+
+The flowing commands can be used to force the synthesizer to compile, keep the hierarchy and make a flatten netlist of the design.
+
+```
+compile -map_effort medium -area_effort medium
+compile_ultra -no_autoungroup
+ungroup -all -flatten
+```
+
 ### Verilog attribute syntax
 
 If verilog parsing is enabled, the parser will take care of the correct annotations for the internal circuit representation used by SILVER. However, for this, all input and output signals of the verilog module have to be annotated using custom attributes. In general, the annotation should use the following verilog syntax:
