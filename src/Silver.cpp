@@ -286,8 +286,8 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
                         if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
 
                     bool independent = true;
-                    for (int idx = 0; idx < secrets.size(); idx++) SPAWN(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
-                    for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
+                    for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
+                    //for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
                     if (!independent) return probes; 
                 }
             } else {
@@ -296,8 +296,8 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
                     observation &= model[probes[probe]].getFunction();
 
                 bool independent = true;
-                for (int idx = 0; idx < secrets.size(); idx++) SPAWN(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
-                for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
+                for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
+                //for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
                 if (!independent) return probes; 
             }
         } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
