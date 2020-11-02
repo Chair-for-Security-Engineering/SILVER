@@ -54,7 +54,7 @@ std::set<std::string> binary  = {"and", "nand", "or", "nor", "xor", "xnor"};
  * @brief Definition of possible probe positions for standard and robust probing.
  */
 std::set<std::string> rprobes = {"reg", "out"};
-std::set<std::string> sprobes = {"in", "ref", "and", "nand", "or", "nor", "xor", "xnor"};
+std::set<std::string> sprobes = {"in", "ref", "not", "and", "nand", "or", "nor", "xor", "xnor"};
 
 std::vector<std::string> 
 split(const std::string line, char delimiter) 
