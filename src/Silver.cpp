@@ -226,13 +226,11 @@ Silver::check_Uniform(Circuit &model)
         std::vector<std::vector<Bdd>> intra(shares.size());
         for (int idx = 0; idx < shares.size(); idx++) {
             for (int comb = 1; comb < (1 << shares[idx].size()); comb++) {
-                if (__builtin_popcount(comb) < shares[idx].size()) {
-                    intra[idx].push_back(sylvan::sylvan_false);
-                    for (int elem = 0; elem < shares[idx].size(); elem++) {
-                        if (comb & (1 << elem)) intra[idx].back() ^= model[shares[idx][elem]].getFunction();
-                    }
-                    if (abs(mtbdd_satcountln(intra[idx].back().GetBDD(), varcount) - varcount + 1) > DOUBLE_COMPARE_THRESHOLD) return false; 
+                intra[idx].push_back(sylvan::sylvan_false);
+                for (int elem = 0; elem < shares[idx].size(); elem++) {
+                    if (comb & (1 << elem)) intra[idx].back() ^= model[shares[idx][elem]].getFunction();
                 }
+                if (abs(mtbdd_satcountln(intra[idx].back().GetBDD(), varcount) - varcount + 1) > DOUBLE_COMPARE_THRESHOLD) return false; 
             }
         }
                  
