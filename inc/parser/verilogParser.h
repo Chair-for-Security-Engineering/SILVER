@@ -1389,6 +1389,8 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 	int		DepthIndex;
 	int		CellIndex;
 	int*	TempSignalList;
+	char	ShouldBeAdded;
+	int		ThisCell_SignalIndex;
 
 	TempSignalList = (int*)malloc(Circuit->NumberOfSignals * 2 * sizeof(int)); // * 2 for registers with two outputs
 	OutFile = fopen(OutputFileName, "wt");
@@ -1428,25 +1430,40 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 
 		for (CellIndex = 0;CellIndex < Circuit->NumberOfCellsInDepth[DepthIndex];CellIndex++)
 		{
+			ShouldBeAdded = 0;
 			for (OutputIndex = 0;OutputIndex < Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->NumberOfOutputs; OutputIndex++)
-			{
 				if (Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Outputs[OutputIndex] != -1)
+					ShouldBeAdded = 1;
+
+			if (ShouldBeAdded)
+			{
+				fprintf(OutFile, "%s", Library->CellTypes[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Type]->CustomName);
+
+				for (InputIndex = 0;InputIndex < Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->NumberOfInputs;InputIndex++)
 				{
-					TempSignalList[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Outputs[OutputIndex]] = SignalIndex++;
+					temp_index = Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Inputs[InputIndex];
 
-					fprintf(OutFile, "%s", Library->CellTypes[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Type]->CustomName);
-
-					for (InputIndex = 0;InputIndex < Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->NumberOfInputs;InputIndex++)
-					{
-						temp_index = Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Inputs[InputIndex];
-
-						if (strcmp(Circuit->Signals[temp_index]->Attribute, "con") &&
-							strcmp(Circuit->Signals[temp_index]->Attribute, "clk"))
-							fprintf(OutFile, " %d", TempSignalList[temp_index]);
-					}
-
-					fprintf(OutFile, " # %s\n", Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Name);
+					if (strcmp(Circuit->Signals[temp_index]->Attribute, "con") &&
+						strcmp(Circuit->Signals[temp_index]->Attribute, "clk"))
+						fprintf(OutFile, " %d", TempSignalList[temp_index]);
 				}
+
+				fprintf(OutFile, " # %s\n", Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Name);
+
+				ThisCell_SignalIndex = SignalIndex++;
+
+				for (OutputIndex = 0;OutputIndex < Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->NumberOfOutputs; OutputIndex++)
+					if (Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Outputs[OutputIndex] != -1)
+					{
+						if (OutputIndex == 0)
+							TempSignalList[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Outputs[OutputIndex]] = ThisCell_SignalIndex;
+						else if ((OutputIndex == 1) &&  // D_FF QN
+							     (Library->CellTypes[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Type]->GateOrReg == Parser_CellType_Reg)) // an inverter should be added after Reg
+						{
+							fprintf(OutFile, "not %d # auto_add for %s\n", ThisCell_SignalIndex, Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Name);
+							TempSignalList[Circuit->Cells[Circuit->CellsInDepth[DepthIndex][CellIndex]]->Outputs[OutputIndex]] = SignalIndex++;
+						}
+					}
 			}
 		}
 	}
