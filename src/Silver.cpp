@@ -109,7 +109,7 @@ Silver::elaborate(Circuit &model) {
             model[*node].setFunction(sylvan_ithvar(*node));
         } else if (model[*node].getType() == "out" || model[*node].getType() == "reg") {
             model[*node].setFunction(model[op1].getFunction());
-        } else if (model[*node].getType() == "not") {    
+        } else if (model[*node].getType() == "not" || model[*node].getType() == "regn") {    
             model[*node].setFunction(!model[op1].getFunction());
         } else if (model[*node].getType() == "and") {
             model[*node].setFunction((model[op1].getFunction() & model[op2].getFunction()));
@@ -147,13 +147,13 @@ Silver::elaborate(Circuit &model) {
         } else if (model[*node].getType() == "ref") {
             model[*node].addRegisters(Bdd::bddVar(*node));
         } else if (unary.find(model[*node].getType()) != unary.end()) {
-            if (model[op1].getType() == "reg")  model[*node].addRegisters(Bdd::bddVar(op1));
-            else                                model[*node].addRegisters(model[op1].getRegisters());
+            if (model[op1].getType() == "reg" || model[op1].getType() == "regn")  model[*node].addRegisters(Bdd::bddVar(op1));
+            else                                                                  model[*node].addRegisters(model[op1].getRegisters());
         } else if (binary.find(model[*node].getType()) != binary.end()) {
-            if (model[op1].getType() == "reg")  model[*node].addRegisters(Bdd::bddVar(op1));
-            else                                model[*node].addRegisters(model[op1].getRegisters());
-            if (model[op2].getType() == "reg")  model[*node].addRegisters(Bdd::bddVar(op2));
-            else                                model[*node].addRegisters(model[op2].getRegisters());
+            if (model[op1].getType() == "reg" || model[op1].getType() == "regn")  model[*node].addRegisters(Bdd::bddVar(op1));
+            else                                                                  model[*node].addRegisters(model[op1].getRegisters());
+            if (model[op2].getType() == "reg" || model[op2].getType() == "regn")  model[*node].addRegisters(Bdd::bddVar(op2));
+            else                                                                  model[*node].addRegisters(model[op2].getRegisters());
         } else {
             std::cerr << "ERR: Unsupported node detected. (ELABORATE)" << std::endl;
         }
