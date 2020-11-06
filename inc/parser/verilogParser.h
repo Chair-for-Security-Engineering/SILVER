@@ -42,6 +42,8 @@
 #define Parser_CellType_Gate     0
 #define Parser_CellType_Reg      1
 
+#define Parser_CellType_Type_Buffer   1
+
 #define Parser_SignalType_input  0
 #define Parser_SignalType_output 1
 #define Parser_SignalType_wire   2
@@ -60,6 +62,7 @@ struct Parser_CellTypeStruct {
 	char	NumberOfCases;
 	char**	Cases;
 	char*	CustomName;
+	char	Type;
 	char	NumberOfInputs;
 	char**	Inputs;
 	char	NumberOfOutputs;
@@ -76,6 +79,7 @@ struct Parser_CellStruct {
 	char	NumberOfOutputs;
 	int*	Outputs;
 	int*	RegValueIndexes;
+	char	Deleted;
 };
 
 struct Parser_SignalStruct {
@@ -86,6 +90,7 @@ struct Parser_SignalStruct {
 	int		NumberOfInputs;
 	int*	Inputs;
 	char*	Attribute;
+	char	Deleted;
 };
 
 struct Parser_LibraryStruct {
@@ -366,6 +371,10 @@ int ReadLibrryFile(char* LibraryFileName, char* LibraryName, Parser_LibraryStruc
 					Library->CellTypes[Library->NumberOfCellTypes]->CustomName = (char *)malloc(strlen(Str1) + 1);
 					strcpy(Library->CellTypes[Library->NumberOfCellTypes]->CustomName, Str1);
 
+					Library->CellTypes[Library->NumberOfCellTypes]->Type = 0;
+					if (strstr(Str1, "buf") == Str1)
+						Library->CellTypes[Library->NumberOfCellTypes]->Type |= Parser_CellType_Type_Buffer;
+
 					ReadNonCommentFromFile(LibraryFile, Str1, "%");
 					Library->CellTypes[Library->NumberOfCellTypes]->NumberOfInputs = atoi(Str1);
 					Library->CellTypes[Library->NumberOfCellTypes]->Inputs = (char **)malloc(Library->CellTypes[Library->NumberOfCellTypes]->NumberOfInputs * sizeof(char *));
@@ -574,12 +583,10 @@ int ProcessAttribute(char* AttributeText, char** &NewAttributes, int &NumberOfNe
 	return(0);
 }
 
-
-
 //***************************************************************************************
 
 int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName, 
-	Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
+	Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit, unsigned char WithAttributes)
 {
 	FILE*			DesignFile;
 	char			finished;
@@ -769,6 +776,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 									Circuit->Signals[Circuit->NumberOfSignals]->NumberOfInputs = 0;
 									Circuit->Signals[Circuit->NumberOfSignals]->Inputs = NULL;
 									Circuit->Signals[Circuit->NumberOfSignals]->Output = -1;
+									Circuit->Signals[Circuit->NumberOfSignals]->Deleted = 0;
 
 									if (!strcmp(Phrase, "input"))
 									{
@@ -817,6 +825,11 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 												NumberOfInputAttributes++;
 												NewAttributeIndex++;
 											}
+										}
+										else if (!WithAttributes)
+										{
+											Circuit->Signals[Circuit->NumberOfSignals]->Attribute = (char*)malloc((strlen("none") + 1)*sizeof(char));
+											strcpy(Circuit->Signals[Circuit->NumberOfSignals]->Attribute, "none");
 										}
 										else
 										{
@@ -876,6 +889,11 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 												NumberOfOutputAttributes++;
 												NewAttributeIndex++;
 											}
+										}
+										else if (!WithAttributes)
+										{
+											Circuit->Signals[Circuit->NumberOfSignals]->Attribute = (char*)malloc((strlen("none") + 1)*sizeof(char));
+											strcpy(Circuit->Signals[Circuit->NumberOfSignals]->Attribute, "none");
 										}
 										else
 										{
@@ -963,6 +981,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 												Circuit->Cells[Circuit->NumberOfCells]->Inputs = (int *)malloc(Library->CellTypes[CellTypeIndex]->NumberOfInputs * sizeof(int));
 												Circuit->Cells[Circuit->NumberOfCells]->NumberOfOutputs = Library->CellTypes[CellTypeIndex]->NumberOfOutputs;
 												Circuit->Cells[Circuit->NumberOfCells]->Outputs = (int *)malloc(Library->CellTypes[CellTypeIndex]->NumberOfOutputs * sizeof(int));
+												Circuit->Cells[Circuit->NumberOfCells]->Deleted = 0;
 
 												if (Library->CellTypes[CellTypeIndex]->GateOrReg == Parser_CellType_Gate)
 												{
@@ -1296,6 +1315,93 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 
 //***************************************************************************************
 
+int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
+{
+	int   InputSignal;
+	int   TempIndex;
+	int   NumberOfRerouted;
+	int   OutputSignal;
+	int   InputIndex;
+	int	  *TempInputs;
+	int   OriginCellIndex;
+	int   OutputIndex;
+
+	InputSignal = Circuit->Cells[CellIndex]->Inputs[0];
+	OutputSignal = Circuit->Cells[CellIndex]->Outputs[0];
+	if (((Circuit->Signals[InputSignal]->Type == Parser_SignalType_input) |
+		(Circuit->Signals[InputSignal]->Type == Parser_SignalType_output)) &
+		(Circuit->Signals[OutputSignal]->Type == Parser_SignalType_output))
+		return (-1);   // cannot be removed
+
+	OriginCellIndex = Circuit->Signals[InputSignal]->Output;
+	if (OriginCellIndex >= 0)
+		for (OutputIndex = 0;OutputIndex < Circuit->Cells[OriginCellIndex]->NumberOfOutputs;OutputIndex++)
+			if (Circuit->Cells[OriginCellIndex]->Outputs[OutputIndex] == InputSignal)
+				break;
+
+	for (InputIndex = 0;InputIndex < Circuit->Signals[InputSignal]->NumberOfInputs;InputIndex++)
+		if (Circuit->Signals[InputSignal]->Inputs[InputIndex] == CellIndex)
+		{
+			memcpy(&Circuit->Signals[InputSignal]->Inputs[InputIndex], &Circuit->Signals[InputSignal]->Inputs[InputIndex + 1], (Circuit->Signals[InputSignal]->NumberOfInputs - InputIndex - 1) * sizeof(int));
+			Circuit->Signals[InputSignal]->NumberOfInputs--;
+			break;
+		}
+
+	if (Circuit->Signals[OutputSignal]->Type == Parser_SignalType_output)
+	{
+		TempIndex = InputSignal;
+		InputSignal = OutputSignal;
+		OutputSignal = TempIndex;
+	}
+
+	TempInputs = (int *)malloc((Circuit->Signals[InputSignal]->NumberOfInputs + Circuit->Signals[OutputSignal]->NumberOfInputs) * sizeof(int));
+	memcpy(TempInputs, Circuit->Signals[InputSignal]->Inputs, Circuit->Signals[InputSignal]->NumberOfInputs * sizeof(int));
+	free(Circuit->Signals[InputSignal]->Inputs);
+	Circuit->Signals[InputSignal]->Inputs = TempInputs;
+	memcpy(&Circuit->Signals[InputSignal]->Inputs[Circuit->Signals[InputSignal]->NumberOfInputs], Circuit->Signals[OutputSignal]->Inputs, Circuit->Signals[OutputSignal]->NumberOfInputs * sizeof(int));
+	Circuit->Signals[InputSignal]->NumberOfInputs += Circuit->Signals[OutputSignal]->NumberOfInputs;
+
+	NumberOfRerouted = 0;
+	for (InputIndex = 0;InputIndex < Circuit->Signals[OutputSignal]->NumberOfInputs;InputIndex++)
+		for (TempIndex = 0;TempIndex < Circuit->Cells[Circuit->Signals[OutputSignal]->Inputs[InputIndex]]->NumberOfInputs;TempIndex++)
+			if (Circuit->Cells[Circuit->Signals[OutputSignal]->Inputs[InputIndex]]->Inputs[TempIndex] == OutputSignal)
+			{
+				Circuit->Cells[Circuit->Signals[OutputSignal]->Inputs[InputIndex]]->Inputs[TempIndex] = InputSignal;
+				NumberOfRerouted++;
+			}
+
+	Circuit->Signals[InputSignal]->Output = OriginCellIndex;
+	if (OriginCellIndex >= 0)
+		Circuit->Cells[OriginCellIndex]->Outputs[OutputIndex] = InputSignal;
+	free(Circuit->Signals[OutputSignal]->Inputs);
+	Circuit->Cells[CellIndex]->Deleted = 1; //
+	Circuit->Signals[OutputSignal]->Deleted = 1;
+
+	return(NumberOfRerouted);
+}
+
+int RemoverAllBuffers(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
+{
+	int   GateIndex;
+	int	  NumberOfRemoved;
+	int	  NumberOfRerouted;
+
+	NumberOfRemoved = 0;
+	NumberOfRerouted = 0;
+	for (GateIndex = 0;GateIndex < Circuit->NumberOfGates;GateIndex++)
+		if (!Circuit->Cells[Circuit->Gates[GateIndex]]->Deleted)
+			if (Library->CellTypes[Circuit->Cells[Circuit->Gates[GateIndex]]->Type]->Type & Parser_CellType_Type_Buffer)
+			{
+				NumberOfRerouted += RemoveBuffer(Circuit->Gates[GateIndex], Circuit);
+				NumberOfRemoved++;
+			}
+
+	printf("%d Buffer(s) removed and %d signal(s) rerouted\n", NumberOfRemoved, NumberOfRerouted);
+
+	return 0;
+}
+
+
 int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
 {
 	int		i;
@@ -1314,7 +1420,8 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 
 		for (SignalIndex = 0;SignalIndex < Circuit->NumberOfSignals;SignalIndex++)
 		{
-			if (Circuit->Signals[SignalIndex]->Depth == DepthIndex)
+			if ((!Circuit->Signals[SignalIndex]->Deleted) &&
+				(Circuit->Signals[SignalIndex]->Depth == DepthIndex))
 			{
 				for (InputIndex = 0;InputIndex < Circuit->Signals[SignalIndex]->NumberOfInputs;InputIndex++)
 				{
@@ -1340,6 +1447,7 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 
 		DepthIndex++;
 	} while (!all_have_depth);
+	   	
 
 	Circuit->MaxDepth = DepthIndex;
 	Circuit->CellsInDepth = (int **)malloc((Circuit->MaxDepth + 1) * sizeof(int *));
@@ -1355,14 +1463,16 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 	}
 
 	for (CellIndex = 0;CellIndex < Circuit->NumberOfCells;CellIndex++)
-	{
-		DepthIndex = Circuit->Cells[CellIndex]->Depth;
-		Circuit->CellsInDepth[DepthIndex][Circuit->NumberOfCellsInDepth[DepthIndex]] = CellIndex;
-		Circuit->NumberOfCellsInDepth[DepthIndex]++;
-	}
+		if (!Circuit->Cells[CellIndex]->Deleted)
+		{
+			DepthIndex = Circuit->Cells[CellIndex]->Depth;
+			Circuit->CellsInDepth[DepthIndex][Circuit->NumberOfCellsInDepth[DepthIndex]] = CellIndex;
+			Circuit->NumberOfCellsInDepth[DepthIndex]++;
+		}
 
 	for (SignalIndex = 0;SignalIndex < Circuit->NumberOfSignals;SignalIndex++)
-		if ((Circuit->Signals[SignalIndex]->Output != -1) && (Circuit->Signals[SignalIndex]->Depth == -1))
+		if ((!Circuit->Signals[SignalIndex]->Deleted) &&
+			(Circuit->Signals[SignalIndex]->Output != -1) && (Circuit->Signals[SignalIndex]->Depth == -1))
 			break;
 
 	if (SignalIndex < Circuit->NumberOfSignals)
@@ -1411,17 +1521,29 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 			if (!strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "clk"))
 				Circuit->ClockSignalIndex = Circuit->Inputs[InputIndex];
 			else
-			{
-				TempSignalList[Circuit->Inputs[InputIndex]] = SignalIndex++;
-
-				if (!strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "ref"))
-					fprintf(OutFile, "ref %d # %s\n", TempSignalList[Circuit->Inputs[InputIndex]], Circuit->Signals[Circuit->Inputs[InputIndex]]->Name);
-				else
+				if (strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "ref"))
+				{
+					TempSignalList[Circuit->Inputs[InputIndex]] = SignalIndex++;
 					fprintf(OutFile, "in %d %s # %s\n", TempSignalList[Circuit->Inputs[InputIndex]], Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, Circuit->Signals[Circuit->Inputs[InputIndex]]->Name);
-			}
+				}
 		}
 	}
-
+	
+	for (InputIndex = 0;InputIndex < Circuit->NumberOfInputs;InputIndex++)
+	{
+		if (strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "con"))
+		{
+			if (!strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "clk"))
+				Circuit->ClockSignalIndex = Circuit->Inputs[InputIndex];
+			else
+				if (!strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "ref"))
+				{
+					TempSignalList[Circuit->Inputs[InputIndex]] = SignalIndex++;
+					fprintf(OutFile, "ref %d # %s\n", TempSignalList[Circuit->Inputs[InputIndex]], Circuit->Signals[Circuit->Inputs[InputIndex]]->Name);
+				}
+		}
+	}
+	   	  
 	//----------------------
 
 	for (DepthIndex = 1;DepthIndex < Circuit->MaxDepth + 1;DepthIndex++)
@@ -1486,7 +1608,7 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 //***************************************************************************************
 
 int Parse_and_Convert(char* LibraryFileName, char* LibraryName,
-	char* InputVerilogFileName, char* MainModuleName, char* OutputFileName)
+	char* InputVerilogFileName, char* MainModuleName, char* OutputFileName, unsigned char WithAttributes = 1)
 {
 	//---------------------------------------------------------------------------------------------//
 	//------------------- reading the library file ------------------------------------------------//
@@ -1501,7 +1623,13 @@ int Parse_and_Convert(char* LibraryFileName, char* LibraryName,
 	Parser_CircuitStruct Circuit;
 
 	if (!res)
-		res = ReadDesignFile(InputVerilogFileName, MainModuleName, &Library, &Circuit);
+		res = ReadDesignFile(InputVerilogFileName, MainModuleName, &Library, &Circuit, WithAttributes);
+
+	//---------------------------------------------------------------------------------------------//
+	//------------------- remove all buffers ------------------------------------------------------//
+
+	if (!res)
+		res = RemoverAllBuffers(&Library, &Circuit);
 
 	//---------------------------------------------------------------------------------------------//
 	//------------------- make the depth of the cells ---------------------------------------------//
