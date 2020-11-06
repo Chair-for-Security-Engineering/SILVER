@@ -94,3 +94,66 @@ D CK
 2
 Q QN
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% for Yosys custom library
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Gate
+1 BUF
+buf
+1 A
+1 Y
+
+Gate
+1 NOT
+not
+1 A
+1 Y
+
+Gate
+1 NAND
+nand
+2 A B
+1 Y
+
+Gate
+1 AND
+and
+2 A B
+1 Y
+
+Gate
+1 OR
+or
+2 A B
+1 Y
+
+Gate
+1 NOR
+nor
+2 A B
+1 Y
+
+Gate
+1 XOR
+xor
+2 A B
+1 Y
+
+Gate
+1 XNOR
+xnor
+2 A B
+1 Y
+
+Reg
+1 DFF
+reg
+2 D C
+1 Q
+
+
+
+
