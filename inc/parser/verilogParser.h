@@ -1404,7 +1404,8 @@ int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* 
 			{
 				for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
 					if ((!Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted) &&
-						((strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk")) ||
+						((strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk") &&
+						  strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con")) ||
 						 (Library->CellTypes[Circuit->Cells[CellIndex]->Type]->GateOrReg == Parser_CellType_Gate)) &&
 						((Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Output != -1) ||
 						(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Type == Parser_SignalType_input)))
@@ -1415,7 +1416,8 @@ int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* 
 					Circuit->Cells[CellIndex]->Deleted = 1;
 
 					for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
-						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk"))
+						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk") && 
+							strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con"))
 							Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted = 1;
 
 					for (OutputIndex = 0;OutputIndex < Circuit->Cells[CellIndex]->NumberOfOutputs;OutputIndex++)
