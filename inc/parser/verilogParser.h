@@ -647,6 +647,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Circuit->Signals[0]->Inputs = NULL;
 	Circuit->Signals[0]->Output = -1;
 	Circuit->Signals[0]->Depth = 0;
+	Circuit->Signals[0]->Attribute = (char*)calloc(1, sizeof(char));
 
 	Circuit->Signals[1] = (Parser_SignalStruct *)malloc(sizeof(Parser_SignalStruct));
 	Circuit->Signals[1]->Name = (char *)malloc(strlen("1'b1") + 1);
@@ -656,6 +657,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Circuit->Signals[1]->Inputs = NULL;
 	Circuit->Signals[1]->Output = -1;
 	Circuit->Signals[1]->Depth = 0;
+	Circuit->Signals[1]->Attribute = (char*)calloc(1, sizeof(char));
 
 	Circuit->Signals[2] = (Parser_SignalStruct *)malloc(sizeof(Parser_SignalStruct));
 	Circuit->Signals[2]->Name = (char *)malloc(strlen("1'h0") + 1);
@@ -665,6 +667,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Circuit->Signals[2]->Inputs = NULL;
 	Circuit->Signals[2]->Output = -1;
 	Circuit->Signals[2]->Depth = 0;
+	Circuit->Signals[2]->Attribute = (char*)calloc(1, sizeof(char));
 
 	Circuit->Signals[3] = (Parser_SignalStruct *)malloc(sizeof(Parser_SignalStruct));
 	Circuit->Signals[3]->Name = (char *)malloc(strlen("1'h1") + 1);
@@ -674,6 +677,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Circuit->Signals[3]->Inputs = NULL;
 	Circuit->Signals[3]->Output = -1;
 	Circuit->Signals[3]->Depth = 0;
+	Circuit->Signals[3]->Attribute = (char*)calloc(1, sizeof(char));
 
 	//---------------------------------------------------------------------------------------------//
 	//------------------- reading the Circuit->Signals from the design file --------------------------------//
@@ -1380,7 +1384,58 @@ int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
 	return(NumberOfRerouted);
 }
 
-int RemoverAllBuffers(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
+//***************************************************************************************
+
+int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
+{
+	int   CellIndex;
+	int	  InputIndex;
+	int	  OutputIndex;
+	int	  NumberOfRemoved;
+	int   NewRemoved;
+
+	NumberOfRemoved = 0;
+
+	do
+	{
+		NewRemoved = 0;
+		for (CellIndex = 0;CellIndex < Circuit->NumberOfCells;CellIndex++)
+			if (!Circuit->Cells[CellIndex]->Deleted)
+			{
+				for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
+					if ((!Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted) &&
+						((strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk")) ||
+						 (Library->CellTypes[Circuit->Cells[CellIndex]->Type]->GateOrReg == Parser_CellType_Gate)) &&
+						((Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Output != -1) ||
+						(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Type == Parser_SignalType_input)))
+						break;
+
+				if (InputIndex == Circuit->Cells[CellIndex]->NumberOfInputs) // all inputs of the cell (except clock) are unconnected
+				{
+					Circuit->Cells[CellIndex]->Deleted = 1;
+
+					for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
+						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk"))
+							Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted = 1;
+
+					for (OutputIndex = 0;OutputIndex < Circuit->Cells[CellIndex]->NumberOfOutputs;OutputIndex++)
+						if (Circuit->Cells[CellIndex]->Outputs[OutputIndex] != -1)
+							Circuit->Signals[Circuit->Cells[CellIndex]->Outputs[OutputIndex]]->Deleted = 1;
+
+					NumberOfRemoved++;
+					NewRemoved = 1;
+				}
+			}
+	} while (NewRemoved);
+
+	printf("%d unconnected cell(s) removed\n", NumberOfRemoved);
+
+	return 0;
+}
+
+//***************************************************************************************
+
+int RemoveAllBuffers(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
 {
 	int   GateIndex;
 	int	  NumberOfRemoved;
@@ -1401,6 +1456,7 @@ int RemoverAllBuffers(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circu
 	return 0;
 }
 
+//***************************************************************************************
 
 int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit)
 {
@@ -1466,6 +1522,13 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 		if (!Circuit->Cells[CellIndex]->Deleted)
 		{
 			DepthIndex = Circuit->Cells[CellIndex]->Depth;
+
+			if (DepthIndex < 0)
+			{
+				printf("the circuit either has a loop or cell %s has an unconnected input. SILVER is currently not able to evaluate such a deisgn\n", Circuit->Cells[CellIndex]->Name);
+				return 1;
+			}
+
 			Circuit->CellsInDepth[DepthIndex][Circuit->NumberOfCellsInDepth[DepthIndex]] = CellIndex;
 			Circuit->NumberOfCellsInDepth[DepthIndex]++;
 		}
@@ -1543,7 +1606,7 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 				}
 		}
 	}
-	   	  
+
 	//----------------------
 
 	for (DepthIndex = 1;DepthIndex < Circuit->MaxDepth + 1;DepthIndex++)
@@ -1626,10 +1689,16 @@ int Parse_and_Convert(char* LibraryFileName, char* LibraryName,
 		res = ReadDesignFile(InputVerilogFileName, MainModuleName, &Library, &Circuit, WithAttributes);
 
 	//---------------------------------------------------------------------------------------------//
+	//------------------- remove unconnected cells ------------------------------------------------//
+
+	if (!res)
+		res = RemoveUnconnectedCells(&Library, &Circuit);
+
+	//---------------------------------------------------------------------------------------------//
 	//------------------- remove all buffers ------------------------------------------------------//
 
 	if (!res)
-		res = RemoverAllBuffers(&Library, &Circuit);
+		res = RemoveAllBuffers(&Library, &Circuit);
 
 	//---------------------------------------------------------------------------------------------//
 	//------------------- make the depth of the cells ---------------------------------------------//
