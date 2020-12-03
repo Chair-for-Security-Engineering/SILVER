@@ -46,7 +46,7 @@
 #ifdef VERILOG
 #define LIBFILE "cell/Library.txt"
 #define LIBNAME "NANG45"
-#define DESIGN  "vlog/aes/aes_sbox_dom1.v"
+#define DESIGN  "vlog/aes/AES_Sbox_DOM/2-Synthesized/aes_sbox_dom1.v"
 #define MODULE  "aes_sbox"
 #endif
 
