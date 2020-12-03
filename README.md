@@ -16,7 +16,7 @@ Please contact Pascal Sasdrich (pascal.sasdrich@rub.de) if you have any question
 ## Build Instructions
 Please follow the instructions below to build the SILVER framework:
 
-1. Download and build the [Boost Graph Library (BGL)](https://www.boost.org/doc/libs/1_73_0/libs/graph/doc/index.html).
+1. Download and include the [Boost Graph Library (BGL)](https://www.boost.org/doc/libs/1_73_0/libs/graph/doc/index.html).
 2. Update the `BOOST` variable in the makefile with the path to your copy of BGL.
 3. Clone and build the [Sylvan](https://github.com/trolando/sylvan) BDD library.
 4. Copy (replace) the Sylvan library to `/lib/`
