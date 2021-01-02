@@ -1352,8 +1352,8 @@ int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
 
 	InputSignal = Circuit->Cells[CellIndex]->Inputs[0];
 	OutputSignal = Circuit->Cells[CellIndex]->Outputs[0];
-	if (((Circuit->Signals[InputSignal]->Type == Parser_SignalType_input) |
-		(Circuit->Signals[InputSignal]->Type == Parser_SignalType_output)) &
+	if (((Circuit->Signals[InputSignal]->Type == Parser_SignalType_input) ||
+		(Circuit->Signals[InputSignal]->Type == Parser_SignalType_output)) &&
 		(Circuit->Signals[OutputSignal]->Type == Parser_SignalType_output))
 		return (-1);   // cannot be removed
 
@@ -1368,7 +1368,7 @@ int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
 		{
 			memcpy(&Circuit->Signals[InputSignal]->Inputs[InputIndex], &Circuit->Signals[InputSignal]->Inputs[InputIndex + 1], (Circuit->Signals[InputSignal]->NumberOfInputs - InputIndex - 1) * sizeof(int));
 			Circuit->Signals[InputSignal]->NumberOfInputs--;
-			break;
+			InputIndex = -1;
 		}
 
 	if (Circuit->Signals[OutputSignal]->Type == Parser_SignalType_output)
@@ -1380,7 +1380,7 @@ int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
 
 	TempInputs = (int *)malloc((Circuit->Signals[InputSignal]->NumberOfInputs + Circuit->Signals[OutputSignal]->NumberOfInputs) * sizeof(int));
 	memcpy(TempInputs, Circuit->Signals[InputSignal]->Inputs, Circuit->Signals[InputSignal]->NumberOfInputs * sizeof(int));
-	free(Circuit->Signals[InputSignal]->Inputs);
+	//free(Circuit->Signals[InputSignal]->Inputs);
 	Circuit->Signals[InputSignal]->Inputs = TempInputs;
 	memcpy(&Circuit->Signals[InputSignal]->Inputs[Circuit->Signals[InputSignal]->NumberOfInputs], Circuit->Signals[OutputSignal]->Inputs, Circuit->Signals[OutputSignal]->NumberOfInputs * sizeof(int));
 	Circuit->Signals[InputSignal]->NumberOfInputs += Circuit->Signals[OutputSignal]->NumberOfInputs;
@@ -1397,7 +1397,7 @@ int RemoveBuffer(int CellIndex, Parser_CircuitStruct* Circuit)
 	Circuit->Signals[InputSignal]->Output = OriginCellIndex;
 	if (OriginCellIndex >= 0)
 		Circuit->Cells[OriginCellIndex]->Outputs[OutputIndex] = InputSignal;
-	free(Circuit->Signals[OutputSignal]->Inputs);
+	//free(Circuit->Signals[OutputSignal]->Inputs);
 	Circuit->Cells[CellIndex]->Deleted = 1; //
 	Circuit->Signals[OutputSignal]->Deleted = 1;
 
@@ -1428,7 +1428,7 @@ int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* 
 						  strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con")) ||
 						 (Library->CellTypes[Circuit->Cells[CellIndex]->Type]->GateOrReg == Parser_CellType_Gate)) &&
 						((Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Output != -1) ||
-						(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Type == Parser_SignalType_input)))
+						 (Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Type == Parser_SignalType_input)))
 						break;
 
 				if (InputIndex == Circuit->Cells[CellIndex]->NumberOfInputs) // all inputs of the cell (except clock) are unconnected
@@ -1437,7 +1437,8 @@ int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* 
 
 					for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
 						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk") &&
-							strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con"))
+							strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con") &&
+							(Circuit->Cells[CellIndex]->Inputs[InputIndex] >= Circuit->NumberOfConstants))
 							Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted = 1;
 
 					for (OutputIndex = 0;OutputIndex < Circuit->Cells[CellIndex]->NumberOfOutputs;OutputIndex++)
@@ -1526,7 +1527,6 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 		DepthIndex++;
 	} while (!all_have_depth);
 
-
 	Circuit->MaxDepth = DepthIndex;
 	Circuit->CellsInDepth = (int **)malloc((Circuit->MaxDepth + 1) * sizeof(int *));
 	Circuit->NumberOfCellsInDepth = (int *)calloc(Circuit->MaxDepth + 1, sizeof(int));
@@ -1539,6 +1539,7 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 		Circuit->CellsInDepth[DepthIndex] = (int *)malloc(Circuit->NumberOfCellsInDepth[DepthIndex] * sizeof(int));
 		Circuit->NumberOfCellsInDepth[DepthIndex] = 0; // temporary to be used as index in the next loop
 	}
+
 
 	for (CellIndex = 0;CellIndex < Circuit->NumberOfCells;CellIndex++)
 		if (!Circuit->Cells[CellIndex]->Deleted)
@@ -1586,9 +1587,9 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 	int*	TempSignalList;
 	char	ShouldBeAdded;
 	int		ThisCell_SignalIndex;
+	int     tt;
 
-	TempSignalList = (int*)malloc(Circuit->NumberOfSignals * 2 * sizeof(int)); // * 2 for registers with two outputs
-	OutFile = fopen(OutputFileName, "wt");
+	TempSignalList = (int *)malloc(Circuit->NumberOfSignals * 2 * sizeof(int));
 
 	SignalIndex = 0;
 	if (Parser_With_GND_and_VDD)
@@ -1598,6 +1599,8 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 		TempSignalList[SignalIndex++] = 0;
 		TempSignalList[SignalIndex++] = 1;
 	}
+
+	OutFile = fopen(OutputFileName, "wt");
 
 	for (InputIndex = 0;InputIndex < Circuit->NumberOfInputs;InputIndex++)
 	{
