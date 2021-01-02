@@ -177,7 +177,7 @@ void fReadaWord(FILE* F, char* Buffer, char* Attribute)
 	char		ch;
 	int			i = 0;
 	int			j = 0;
-	
+
 	if (Attribute)
 		Attribute[0] = 0;
 
@@ -246,7 +246,7 @@ void fReadaWord(FILE* F, char* Buffer, char* Attribute)
 				if (Buffer[i - 1] == '/') // start of the comment "//"
 				{
 					i--;
-					
+
 					while (!feof(F))
 					{
 						ch = fgetc(F);
@@ -451,7 +451,7 @@ int ProcessAttribute(char* AttributeText, char** &NewAttributes, int &NumberOfNe
 	Str2 = (char*)malloc(Parser_Max_Name_Length * sizeof(char));
 	Str3 = (char*)malloc(Parser_Max_Name_Length * sizeof(char));
 	Str4 = (char*)malloc(Parser_Max_Name_Length * sizeof(char));
-	
+
 	ptr = strstr(AttributeText, "SILVER");
 	if (ptr)
 	{
@@ -585,7 +585,7 @@ int ProcessAttribute(char* AttributeText, char** &NewAttributes, int &NumberOfNe
 
 //***************************************************************************************
 
-int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName, 
+int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Parser_LibraryStruct* Library, Parser_CircuitStruct* Circuit, unsigned char WithAttributes)
 {
 	FILE*			DesignFile;
@@ -635,7 +635,7 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 
 	// --------- adding 0 and 1 Circuit->Signals --------------
 
-	Circuit->NumberOfSignals = 4;
+	Circuit->NumberOfSignals = 6;
 	Circuit->NumberOfConstants = Circuit->NumberOfSignals;
 	Circuit->Signals = (Parser_SignalStruct **)malloc(Circuit->NumberOfSignals * sizeof(Parser_SignalStruct *));
 
@@ -678,6 +678,26 @@ int ReadDesignFile(char* InputVerilogFileName, char* MainModuleName,
 	Circuit->Signals[3]->Output = -1;
 	Circuit->Signals[3]->Depth = 0;
 	Circuit->Signals[3]->Attribute = (char*)calloc(1, sizeof(char));
+
+	Circuit->Signals[4] = (Parser_SignalStruct *)malloc(sizeof(Parser_SignalStruct));
+	Circuit->Signals[4]->Name = (char *)malloc(strlen("1'bx") + 1);
+	strcpy(Circuit->Signals[4]->Name, "1'bx");
+	Circuit->Signals[4]->Type = Parser_SignalType_wire;
+	Circuit->Signals[4]->NumberOfInputs = 0;
+	Circuit->Signals[4]->Inputs = NULL;
+	Circuit->Signals[4]->Output = -1;
+	Circuit->Signals[4]->Depth = 0;
+	Circuit->Signals[4]->Attribute = (char*)calloc(1, sizeof(char));
+
+	Circuit->Signals[5] = (Parser_SignalStruct *)malloc(sizeof(Parser_SignalStruct));
+	Circuit->Signals[5]->Name = (char *)malloc(strlen("1'hx") + 1);
+	strcpy(Circuit->Signals[5]->Name, "1'hx");
+	Circuit->Signals[5]->Type = Parser_SignalType_wire;
+	Circuit->Signals[5]->NumberOfInputs = 0;
+	Circuit->Signals[5]->Inputs = NULL;
+	Circuit->Signals[5]->Output = -1;
+	Circuit->Signals[5]->Depth = 0;
+	Circuit->Signals[5]->Attribute = (char*)calloc(1, sizeof(char));
 
 	//---------------------------------------------------------------------------------------------//
 	//------------------- reading the Circuit->Signals from the design file --------------------------------//
@@ -1416,7 +1436,7 @@ int RemoveUnconnectedCells(Parser_LibraryStruct* Library, Parser_CircuitStruct* 
 					Circuit->Cells[CellIndex]->Deleted = 1;
 
 					for (InputIndex = 0;InputIndex < Circuit->Cells[CellIndex]->NumberOfInputs;InputIndex++)
-						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk") && 
+						if (strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "clk") &&
 							strcmp(Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Attribute, "con"))
 							Circuit->Signals[Circuit->Cells[CellIndex]->Inputs[InputIndex]]->Deleted = 1;
 
@@ -1505,7 +1525,7 @@ int MakeCircuitDepth(Parser_LibraryStruct* Library, Parser_CircuitStruct* Circui
 
 		DepthIndex++;
 	} while (!all_have_depth);
-	   	
+
 
 	Circuit->MaxDepth = DepthIndex;
 	Circuit->CellsInDepth = (int **)malloc((Circuit->MaxDepth + 1) * sizeof(int *));
@@ -1593,7 +1613,7 @@ int WriteCustomizedFile(char* OutputFileName, Parser_LibraryStruct* Library, Par
 				}
 		}
 	}
-	
+
 	for (InputIndex = 0;InputIndex < Circuit->NumberOfInputs;InputIndex++)
 	{
 		if (strcmp(Circuit->Signals[Circuit->Inputs[InputIndex]]->Attribute, "con"))
@@ -1720,7 +1740,7 @@ int Parse_and_Convert(char* LibraryFileName, char* LibraryName,
 //***************************************************************************************
 
 #ifdef VERILOG
-static int parse_and_convert_wrapper( 
+static int parse_and_convert_wrapper(
     std::string LibraryFileName, std::string LibraryName,
 	std::string InputFileName, std::string MainModuleName,
 	std::string OutputFileName
