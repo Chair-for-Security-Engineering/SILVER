@@ -24,12 +24,12 @@ Please follow the instructions below to build the SILVER framework:
 6. `make release`
 
 ## Quick Start
-Build the SILVER framework using the instructions above. You can configure the framework in `/inc/config.hpp` to specify the number of cores and RAM used by Sylvan. Besides, you can enable Verilog parsing or parse instruction files directly (cf. examples in `test/`). If Verilog parsing is enabled, please specify necessary parameters in `/inc/config.hpp` and describe your cell library used during synthesis in `cell/` (example given for constrained NANG45).
+Build the SILVER framework using the instructions above. You can configure the framework via the [command line](#Command-line-options) to specify the number of cores and RAM used by Sylvan. Besides, you can enable Verilog parsing or parse instruction files directly (cf. examples in `test/`). If Verilog parsing is enabled, please specify necessary parameters in `/inc/config.hpp` and describe your cell library used during synthesis in `cell/` (example given for constrained NANG45).
 
 1. `make release`
 2. `./bin/verify`
 
-Examplary output for `/test/dom/dom1.nl` (instruction file) with `VERBOSE 1`:
+Examplary output for `/test/dom/dom1.nl` (instruction file) with `--verbose=1`:
 
 ```
 [     0.000] Netlist: test/dom/dom1.nl
@@ -45,6 +45,38 @@ Examplary output for `/test/dom/dom1.nl` (instruction file) with `VERBOSE 1`:
 [     0.007] PINI.robust      (d ≤ 1) -- FAIL.  >> Probes: <reg:line14>
 [     0.007] uniformity               -- PASS.
 ```
+
+## Command line options
+
+The following shows the main command line options to the program:
+
+```sh
+$> ./bin/verify --help
+Silver arguments:
+  --help                                Show the help message
+  --cores arg (=0)                      Maximum number of CPU cores to use. Set
+                                        to 0 (default) for auto-detect
+  --memory arg (=1073741824)            RAM (in Bytes) used by Sylvan BDD 
+                                        library.
+  --verbose arg (=0)                    Be verbose (or not) in printing 
+                                        detailed test reports.
+  --verilog arg (=0)                    Parse the verilog design described by 
+                                        the --verilog-* parameters.
+  --verilog-libfile arg (=cell/Library.txt)
+                                        Technology library description.
+  --verilog-libname arg (=NANG45)       Technology library name.
+  --verilog-design_file arg (=vlog/aes/AES_Sbox_DOM/2-Synthesized/aes_sbox_dom1.v)
+                                        Verilg source file containing the 
+                                        design.
+  --verilog-module_name arg (=aes_sbox) Module contained within the verilog 
+                                        source to verify.
+  --insfile arg (=test/aes/aes_sbox_dom1.nl)
+                                        Instruction list to parse and process. 
+                                        Either externally provided or result of
+                                        verilog parser
+```
+
+Note that if you do not set `--verilog=1` then all other `--verilog-*` arguments will be ignored.
 
 ## Verilog annotations
 
@@ -147,6 +179,8 @@ In case you get an error message similar to:
 ```
 
 please export the `/lib` directory to your linker library path, e.g., using `export LD_LIBRARY_PATH=``pwd``/lib` before executing the binary.
+
+Note that you may get a similar error referring to `libboost_program_options.so`. You will need to add the path to your boost installation to `LD_LIBRARY_PATH`. E.g. `export LD_LIBRARY_PATH=$BOOST/lib:$LD_LIBRARY_PATH`.
 
 ### Cache creation (memory allocation)
 In case you get an error message similar to: 

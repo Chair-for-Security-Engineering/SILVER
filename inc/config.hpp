@@ -29,25 +29,28 @@
 #include <sylvan/sylvan.h>
 #include <sylvan/sylvan_obj.hpp>
 
+/* Contains all configuration options for the Silver verify tool. */
+typedef struct silver_config {
+
 /* Specify number of cores (0 for auto-detect) and RAM (in Byte) used by Sylvan BDD library */
-#define CORES 0
-#define MEMORY 1*1024*1024*1024ull
+unsigned int CORES;
+size_t       MEMORY;
 
-/* Enable (1) / disable (0) detailed test reporting */
-#define VERBOSE 1
+/* Enable (true) / disable (false) detailed test reporting */
+bool         VERBOSE;
 
-/* Enable (defined) / disable (undefined) verilog design parsing */
-#define VERILOG
+/* Enable (true) / disable (false) verilog design parsing */
+bool         PARSE_VERILOG;
 
 /* Instruction list (either externally provided or result of verilog parser) */
-#define INSFILE "test/aes/aes_sbox_dom1.nl"
+std::string INSFILE ;
 
-/* If VERILOG is defined, specify verilog design details here */
-#ifdef VERILOG
-#define LIBFILE "cell/Library.txt"
-#define LIBNAME "NANG45"
-#define DESIGN  "vlog/aes/AES_Sbox_DOM/2-Synthesized/aes_sbox_dom1.v"
-#define MODULE  "aes_sbox"
-#endif
+/* If PARSE_VERILOG is set, specify verilog design details here */
+std::string LIBFILE;
+std::string LIBNAME;
+std::string DESIGN;
+std::string MODULE;
+
+} silver_config_t;
 
 #endif // __SILVER_CONFIG_HPP_

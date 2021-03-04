@@ -26,13 +26,15 @@
 #include "config.hpp"
 #include "Silver.hpp"
 
-#ifdef VERILOG
 #include "parser/verilogParser.h"
-#endif
 
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
 
 static std::chrono::time_point<std::chrono::high_resolution_clock> start;
 
@@ -44,7 +46,61 @@ static void INFO(const std::string info) {
 #define str(i) std::to_string(i)
 #define time std::chrono::high_resolution_clock::now()
 
+//
+// Construct an argument parser using the boost program_options libary.
+po::options_description build_argument_parser(
+    silver_config_t * cfg
+) {
+    po::options_description all("Silver arguments");
+    all.add_options()
+    ("help" , "Show the help message")
+
+    ("cores", po::value<unsigned int>(&cfg->CORES)->default_value(0),
+        "Maximum number of CPU cores to use. Set to 0 (default) for auto-detect")
+
+    ("memory", po::value<size_t>(&cfg->MEMORY)->default_value(1*1024*1024*1024ull),
+        "RAM (in Bytes) used by Sylvan BDD library.")
+
+    ("verbose", po::value<bool>(&cfg->VERBOSE)->default_value(false),
+        "Be verbose (or not) in printing detailed test reports.")
+
+    ("verilog", po::value<bool>(&cfg->PARSE_VERILOG)->default_value(false),
+        "Parse the verilog design described by the --verilog-* parameters.")
+
+    ("verilog-libfile",po::value<std::string>(&cfg->LIBFILE)->default_value("cell/Library.txt"),
+        "Technology library description.")
+
+    ("verilog-libname",po::value<std::string>(&cfg->LIBNAME)->default_value("NANG45"),
+        "Technology library name.")
+
+    ("verilog-design_file",po::value<std::string>(&cfg->DESIGN)->default_value("vlog/aes/AES_Sbox_DOM/2-Synthesized/aes_sbox_dom1.v"),
+        "Verilg source file containing the design.")
+
+    ("verilog-module_name",po::value<std::string>(&cfg->MODULE)->default_value("aes_sbox"),
+        "Module contained within the verilog source to verify.")
+
+    ("insfile",po::value<std::string>(&cfg->INSFILE)->default_value("test/aes/aes_sbox_dom1.nl"),
+        "Instruction list to parse and process. Either externally provided or result of verilog parser")
+    ;
+
+    return all;
+}
+
 int main (int argc, char * argv[]) {
+
+    /* Configuration options / command line arguments */
+    silver_config_t cfg;
+
+    /* Build the argument parser and run it on argc/argv */
+    po::options_description desc = build_argument_parser(&cfg);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 0;
+    }
 
     /* Variable declarations */    
     Circuit model;
@@ -54,34 +110,40 @@ int main (int argc, char * argv[]) {
     bool check;
 
     /* Start LACE framework */
-    lace_init(CORES, 0);
+    lace_init(cfg.CORES, 0);
     lace_startup(0, NULL, NULL);
 
     /* Start BDD session */
-    sylvan::sylvan_set_limits(MEMORY, 0, 10);
+    sylvan::sylvan_set_limits(cfg.MEMORY, 0, 10);
     sylvan::sylvan_init_package();
     sylvan::sylvan_init_mtbdd();
 
     /* Extract Designs Under Test */
-    std::string dut = INSFILE;
+    std::string dut = cfg.INSFILE;
 
     /* Start time tracking */
     start = std::chrono::high_resolution_clock::now();
 
     /* Parse & convert verilog design to instruction list */
-#ifdef VERILOG
-    int res = parse_and_convert_wrapper(LIBFILE, LIBNAME, DESIGN, MODULE, INSFILE);
-    if (res) { std::cout << "Verilog design parsing failed." << std::endl; return res; }
-#endif
+    if(cfg.PARSE_VERILOG) {
+        INFO("Parsing verilog design " + cfg.DESIGN + " with top module " + cfg.MODULE +"\n");
+        int res = parse_and_convert_wrapper(
+            cfg.LIBFILE, cfg.LIBNAME, cfg.DESIGN, cfg.MODULE, cfg.INSFILE
+        );
+        if (res) {
+            std::cout << "Verilog design parsing failed." << std::endl;
+            return res;
+        }
+    }
 
     /* Parse circuit from text file*/
     INFO("Netlist: " + dut + "\n");
     model = Silver::parse(dut);
-    if (VERBOSE > 0) INFO("Parse: " + str(num_vertices(model)) + " gate(s) / " + str(num_edges(model))  + " signal(s)\n");
+    if (cfg.VERBOSE) INFO("Parse: " + str(num_vertices(model)) + " gate(s) / " + str(num_edges(model))  + " signal(s)\n");
 
     /* Elabotare circuit model */
     std::map<int, Probes> inputs = Silver::elaborate(model);
-    if (VERBOSE > 0) INFO("Elaborate: " + str(num_vertices(model)) + " gate(s) / " + str(num_edges(model))  + " signal(s)\n");
+    if (cfg.VERBOSE) INFO("Elaborate: " + str(num_vertices(model)) + " gate(s) / " + str(num_edges(model))  + " signal(s)\n");
 
     /* Find smallest sharing */
     for (int index = 0; index < inputs.size(); index++) {
@@ -96,56 +158,56 @@ int main (int argc, char * argv[]) {
 
     if (probes.size() - 1 != 0) INFO("probing.standard (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("probing.standard (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Robust probing security */
     probes = Silver::check_Probing(model, inputs, order, true);
 
     if (probes.size() - 1 != 0) INFO("probing.robust   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("probing.robust   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
     
     /* Standard non-interference */
     probes = Silver::check_NI(model, inputs, order, false);
 
     if (probes.size() - 1 != 0) INFO("NI.standard      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("NI.standard      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Robust non-interference */
     probes = Silver::check_NI(model, inputs, order, true);
 
     if (probes.size() - 1 != 0) INFO("NI.robust        (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("NI.robust        (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
     
     /* Standard strong non-interference */
     probes = Silver::check_SNI(model, inputs, order, false);
 
     if (probes.size() - 1 != 0) INFO("SNI.standard     (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("SNI.standard     (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Robust strong non-interference */
     probes = Silver::check_SNI(model, inputs, order, true);
 
     if (probes.size() - 1 != 0) INFO("SNI.robust       (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("SNI.robust       (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
     
     /* Standard probe-isolating non-interference */
     probes = Silver::check_PINI(model, inputs, order, false);
 
     if (probes.size() - 1 != 0) INFO("PINI.standard    (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("PINI.standard    (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Robust probe-isolating non-interference */
     probes = Silver::check_PINI(model, inputs, order, true);
 
     if (probes.size() - 1 != 0) INFO("PINI.robust      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("PINI.robust      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Standard uniformity check */
     bool uniform = Silver::check_Uniform(model);
