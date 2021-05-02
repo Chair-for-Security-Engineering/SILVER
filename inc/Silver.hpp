@@ -1,8 +1,9 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universit√§t Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universit‰t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
- * DOCUMENT: https://eprint.iacr.org/2020/634.pdf
+ * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
+ *           https://eprint.iacr.org/2020/634.pdf
  * -----------------------------------------------------------------
  *
  * Copyright (c) 2020, Pascal Sasdrich
@@ -69,11 +70,11 @@ public:
     static std::vector<Node> check_Probing(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
 
     static std::vector<Node> check_NI(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
-    
+
     static std::vector<Node> check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
 
     static std::vector<Node> check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
-  
+
     static void print_node_vector(const Circuit &model, const std::vector<Node> nodes);
 
 private:
@@ -81,7 +82,7 @@ private:
     static bool inter_vector_combinations_xor(const std::vector<std::vector<sylvan::Bdd>> &intra, int offset, sylvan::Bdd combination, int varcount);
 
     static std::vector<Node> get_nodes_of_types(Circuit &model, const std::set<std::string> types);
-    
+
     static int get_minimal_sharing(std::map<int, Probes> inputs);
 };
 #endif // __NETLIST_HPP_

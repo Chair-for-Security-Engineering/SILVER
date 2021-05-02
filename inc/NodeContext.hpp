@@ -1,8 +1,9 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-UniversitÃ¤t Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
- * DOCUMENT: https://eprint.iacr.org/2020/634.pdf
+ * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
+ *           https://eprint.iacr.org/2020/634.pdf
  * -----------------------------------------------------------------
  *
  * Copyright (c) 2020, Pascal Sasdrich
@@ -22,7 +23,7 @@
  *
  * Please see LICENSE and README for license and further instructions.
  */
- 
+
 #ifndef __NODECONTEXT_HPP_
 #define __NODECONTEXT_HPP_
 
@@ -49,7 +50,7 @@ public:
      * @brief Store node type (gate functionality) in node context
      * @param type Node type in circuit model
      */
-    void 
+    void
     setType(const std::string type)
     {
         this->type = type;
@@ -68,7 +69,7 @@ public:
      * @brief Store sharing details (of node) in node context
      * @param sharing Sharing details (of node) in circuit model
      */
-    void 
+    void
     setSharing(std::pair<int,int> sharing)
     {
         this->sharing = sharing;
@@ -150,7 +151,7 @@ public:
     /**
      * @brief Return BDD representation of node function (in circuit model)
      */
-    sylvan::Bdd 
+    sylvan::Bdd
     getFunction() const
     {
         return this->function;
@@ -160,12 +161,12 @@ public:
      * @brief Store BDD representation of node function (in circuit model)
      * @param function BDD representation of node function (in circuit model)
      */
-    void 
-    setFunction(sylvan::Bdd function) 
+    void
+    setFunction(sylvan::Bdd function)
     {
         this->function = function;
     }
-    
+
 private:
 
     /**
@@ -187,7 +188,7 @@ private:
      * @brief BDD representation of node function (in circuit model)
      */
     sylvan::Bdd function;
-    
+
     /**
      * @brief BDD representation of input variable dependecies (in circuit model)
      */
@@ -197,7 +198,7 @@ private:
      * @brief BDD representation of register dependecies (in circuit model)
      */
     sylvan::Bdd registers;
-    
+
     /**
      * @brief Key of BDD representation in function database (.fdb) file
      */

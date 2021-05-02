@@ -1,6 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // COMPANY:		Ruhr University Bochum
-// AUTHOR:		Amir Moradi (for the paper: https://eprint.iacr.org/2020/634 )
+// AUTHOR:		Amir Moradi (for the paper: https://doi.org/10.1007/978-3-030-64837-4_26
+//                                          https://eprint.iacr.org/2020/634.pdf
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2020, Amir Moradi
 // All rights reserved.

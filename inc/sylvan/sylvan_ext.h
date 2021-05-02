@@ -1,8 +1,9 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universit√§t Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universit‰t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
- * DOCUMENT: https://eprint.iacr.org/2020/634.pdf
+ * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
+ *           https://eprint.iacr.org/2020/634.pdf
  * -----------------------------------------------------------------
  *
  * Copyright (c) 2020, Pascal Sasdrich
@@ -61,7 +62,7 @@ TASK_2(double, mtbdd_satcountln, MTBDD, dd, size_t, nvars)
     SPAWN(mtbdd_satcountln, mtbdd_gethigh(dd), nvars-1);
     double low = CALL(mtbdd_satcountln, mtbdd_getlow(dd), nvars-1);
     double high = SYNC(mtbdd_satcountln);
-    
+
     if (low < 0.0)
         hack.d = high;
     else if (high < 0.0)
@@ -84,12 +85,12 @@ TASK_2(double, mtbdd_singprobability, MTBDD, dd, size_t, nvars)
 
     /* Perhaps execute garbage collection */
     sylvan_gc_test();
-    
+
     union {
         double d;
         uint64_t s;
-    } hack;	
-    
+    } hack;
+
     /* Consult cache */
     if (cache_get3(CACHE_BDD_SINGPROB, dd, 0, nvars, &hack.s)) {
         return hack.d;
@@ -101,7 +102,7 @@ TASK_2(double, mtbdd_singprobability, MTBDD, dd, size_t, nvars)
     hack.d = 0.5 * (low + high);
 
     cache_put3(CACHE_BDD_SINGPROB, dd, 0, nvars, hack.s);
-    
+
     return hack.d;
 }
 #define mtbdd_singprobability(dd, nvars) CALL(mtbdd_singprobability, dd, nvars)
@@ -110,17 +111,17 @@ TASK_4(double, mtbdd_combprobability, MTBDD, dd1, size_t, nvars1, MTBDD, dd2, si
 {
     /* Perhaps execute garbage collection */
     sylvan_gc_test();
-    
+
     union {
         double d;
         uint64_t s;
-    } hack;	
-    
+    } hack;
+
     /* Consult cache */
     if (cache_get3(CACHE_BDD_COMBPROB, dd1, dd2, 0, &hack.s)) {
         return hack.d;
     }
-    
+
     if (mtbdd_getvar(dd1) >  mtbdd_getvar(dd2)) {
         hack.d = CALL(mtbdd_combprobability, dd2, nvars2, dd1, nvars1);
     } else if (mtbdd_isleaf(dd2)) {
@@ -129,7 +130,7 @@ TASK_4(double, mtbdd_combprobability, MTBDD, dd1, size_t, nvars1, MTBDD, dd2, si
         hack.d = (dd1 == mtbdd_true) ? pow(2.0, mtbdd_satcountln(dd2, nvars2) - nvars2) : 0.0;
     } else if (dd1 == dd2) {
         hack.d = pow(2.0, mtbdd_satcountln(dd1, nvars1) - nvars1);
-    } else if (mtbdd_getvar(dd1) == mtbdd_getvar(dd2)) {		
+    } else if (mtbdd_getvar(dd1) == mtbdd_getvar(dd2)) {
         SPAWN(mtbdd_combprobability, mtbdd_gethigh(dd1), nvars1-1, mtbdd_gethigh(dd2), nvars2-1);
         double low  = CALL(mtbdd_combprobability, mtbdd_getlow(dd1), nvars1-1, mtbdd_getlow(dd2), nvars2-1);
         double high = SYNC(mtbdd_combprobability);
@@ -137,12 +138,12 @@ TASK_4(double, mtbdd_combprobability, MTBDD, dd1, size_t, nvars1, MTBDD, dd2, si
     } else {
         SPAWN(mtbdd_combprobability, mtbdd_gethigh(dd1), nvars1-1, dd2, nvars2);
         double low  = CALL(mtbdd_combprobability, mtbdd_getlow(dd1), nvars1-1, dd2, nvars2);
-        double high = SYNC(mtbdd_combprobability);		
+        double high = SYNC(mtbdd_combprobability);
         hack.d = 0.5 * (low + high);
     }
-    
+
     cache_put3(CACHE_BDD_COMBPROB, dd1, dd2, 0, hack.s);
-    
+
     return hack.d;
 }
 #define mtbdd_combprobability(dd1, nvars1, dd2, nvars2) CALL(mtbdd_combprobability, dd1, nvars1, dd2, nvars2)
@@ -151,28 +152,28 @@ TASK_4(int, mtbdd_statindependence, MTBDD, dd1, size_t, nvars1, MTBDD, dd2, size
 {
     /* Perhaps execute garbage collection */
     sylvan_gc_test();
-    
+
     union {
         int b;
         uint64_t s;
-    } hack;	
-    
+    } hack;
+
     /* Consult cache */
     if (cache_get3(CACHE_BDD_STATINDEP, dd1, dd2, 0, &hack.s)) {
         return hack.b;
     }
-    
+
     SPAWN(mtbdd_singprobability, dd1, nvars1);
     SPAWN(mtbdd_singprobability, dd2, nvars2);
-    
+
     double single1  = SYNC(mtbdd_singprobability);
     double single2  = SYNC(mtbdd_singprobability);
     double combined = CALL(mtbdd_combprobability, dd1, nvars1, dd2, nvars2);
 
     hack.b = fabs(combined - (single1 * single2)) < 0.000001;
-    
+
     cache_put3(CACHE_BDD_STATINDEP, dd1, dd2, 0, hack.s);
-    
+
     return hack.b;
 }
 #define mtbdd_statindep(dd1, nvars1, dd2, nvars2) CALL(mtbdd_statindependence, dd1, nvars1, dd2, nvars2)

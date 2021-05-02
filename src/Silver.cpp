@@ -1,8 +1,9 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universit√§t Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universit‰t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
- * DOCUMENT: https://eprint.iacr.org/2020/634.pdf
+ * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
+ *           https://eprint.iacr.org/2020/634.pdf
  * -----------------------------------------------------------------
  *
  * Copyright (c) 2020, Pascal Sasdrich
@@ -36,7 +37,7 @@ using namespace sylvan;
  */
 
 /* Circuit parsing and graph generation */
-Circuit 
+Circuit
 Silver::parse(const std::string filePath)
 {
     std::vector<std::string> tokens, annotations;
@@ -92,7 +93,7 @@ Silver::elaborate(Circuit &model) {
     boost::topological_sort(model, std::back_inserter(sorted));
 
     for (auto node = sorted.rbegin(); node != sorted.rend(); ++node) {
-        
+
         if (unary.find(model[*node].getType()) != unary.end()) {
             op1 = source(*(in_edges(*node, model).first+0), model);
         } else if (binary.find(model[*node].getType()) != binary.end()) {
@@ -109,7 +110,7 @@ Silver::elaborate(Circuit &model) {
             model[*node].setFunction(sylvan_ithvar(*node));
         } else if (model[*node].getType() == "out" || model[*node].getType() == "reg") {
             model[*node].setFunction(model[op1].getFunction());
-        } else if (model[*node].getType() == "not" || model[*node].getType() == "regn") {    
+        } else if (model[*node].getType() == "not" || model[*node].getType() == "regn") {
             model[*node].setFunction(!model[op1].getFunction());
         } else if (model[*node].getType() == "and") {
             model[*node].setFunction((model[op1].getFunction() & model[op2].getFunction()));
@@ -132,7 +133,7 @@ Silver::elaborate(Circuit &model) {
             model[*node].addVariables(Bdd::bddVar(*node));
         } else if (model[*node].getType() == "ref") {
             model[*node].addVariables(Bdd::bddVar(*node));
-        } else if (unary.find(model[*node].getType()) != unary.end()) {       
+        } else if (unary.find(model[*node].getType()) != unary.end()) {
             model[*node].addVariables(model[op1].getVariables());
         } else if (binary.find(model[*node].getType()) != binary.end()) {
             model[*node].addVariables(model[op1].getVariables());
@@ -181,7 +182,7 @@ Silver::check_Uniform(Circuit &model)
         if (model[*gate].getType() == "in" || model[*gate].getType() == "ref") inputs.push_back(model[*gate].getFunction());
         if (model[*gate].getType() == "out") outputs.push_back(model[*gate].getFunction());
     }
-    
+
     if (inputs.size() == outputs.size()) {
 
         std::vector<uint32_t> from(inputs.size()), to(inputs.size());
@@ -214,7 +215,7 @@ Silver::check_Uniform(Circuit &model)
         for (int index = 1; index < relations.size(); index++) {
             states &= Bdd::bddOne().RelNext(relations[index], BddSet(sylvan_false));
         }
-        
+
         return (mtbdd_satcountln(states.GetBDD(), outputs.size()) == outputs.size());
 
     } else {
@@ -230,10 +231,10 @@ Silver::check_Uniform(Circuit &model)
                 for (int elem = 0; elem < shares[idx].size(); elem++) {
                     if (comb & (1 << elem)) intra[idx].back() ^= model[shares[idx][elem]].getFunction();
                 }
-                if (abs(mtbdd_satcountln(intra[idx].back().GetBDD(), varcount) - varcount + 1) > DOUBLE_COMPARE_THRESHOLD) return false; 
+                if (abs(mtbdd_satcountln(intra[idx].back().GetBDD(), varcount) - varcount + 1) > DOUBLE_COMPARE_THRESHOLD) return false;
             }
         }
-                 
+
         return inter_vector_combinations_xor(intra, 0, Bdd::bddZero(), varcount);
     }
 }
@@ -244,7 +245,7 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
 {
     LACE_ME;
 
-    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes); 
+    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes);
 
     int minimal = get_minimal_sharing(inputs);
 
@@ -260,7 +261,7 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
         secrets[comb-1] = Bdd::bddOne();
         for (int elem = 0; elem < inputs.size(); elem++) if (comb & (1 << elem)) secrets[comb-1] &= secrets[elem];
     }
-    
+
     int varcount = 0;
     for (auto node = vertices(model).first; node != vertices(model).second; node++)
         if (model[*node].getType() == "in" || model[*node].getType() == "ref") varcount++;
@@ -280,13 +281,13 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
 
                 for (int comb = 1; comb < (1 << extended.size()); comb++) {
                     observation = sylvan::sylvan_true;
-                    for (int elem = 0; elem < extended.size(); elem++) 
+                    for (int elem = 0; elem < extended.size(); elem++)
                         if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
 
                     bool independent = true;
-                    for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
+                    for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);
                     //for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
-                    if (!independent) return probes; 
+                    if (!independent) return probes;
                 }
             } else {
                 Bdd observation = model[probes[0]].getFunction();
@@ -294,9 +295,9 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
                     observation &= model[probes[probe]].getFunction();
 
                 bool independent = true;
-                for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);                        
+                for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);
                 //for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
-                if (!independent) return probes; 
+                if (!independent) return probes;
             }
         } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
     }
@@ -310,7 +311,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
 {
     LACE_ME;
 
-    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes); 
+    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes);
 
     int minimal = get_minimal_sharing(inputs);
 
@@ -340,7 +341,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
 
                 for (int comb = 1; comb < (1 << extended.size()); comb++) {
                     observation = sylvan::sylvan_true;
-                    for (int elem = 0; elem < extended.size(); elem++) 
+                    for (int elem = 0; elem < extended.size(); elem++)
                         if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
 
                     bool trivial_solution = true;
@@ -365,7 +366,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
                                 }
                             }
                         }
-      
+
                         std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
 
                         bool independent = false;
@@ -378,7 +379,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
                                 if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                     complement.push_back(secvar[elem]);
 
-                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                                 Bdd simulate = observation;
                                 for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -420,7 +421,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
                             }
                         }
                     }
-      
+
                     std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
 
                     bool independent = false;
@@ -433,7 +434,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
                             if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                 complement.push_back(secvar[elem]);
 
-                        for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                        for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                             Bdd simulate = observation;
                             for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -445,7 +446,7 @@ Silver::check_NI(Circuit &model, std::map<int, Probes> inputs, const int probing
                             }
                         }
                     }
-                    
+
                     if (!independent) return probes;
                 }
             }
@@ -461,11 +462,11 @@ Silver::check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probin
 {
     LACE_ME;
 
-    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes); 
+    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes);
 
-    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++) 
+    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++)
         if (!robustModel && model[*gate].getType() == "out") positions.push_back(*gate);
-    
+
     int minimal = get_minimal_sharing(inputs);
 
     if (probingOrder == 0 || inputs[minimal].size() < 2 || inputs[minimal].size() < probingOrder) return inputs[minimal];
@@ -497,7 +498,7 @@ Silver::check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probin
 
                 for (int comb = 1; comb < (1 << extended.size()); comb++) {
                     observation = sylvan::sylvan_true;
-                    for (int elem = 0; elem < extended.size(); elem++) 
+                    for (int elem = 0; elem < extended.size(); elem++)
                         if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
 
                     bool trivial_solution = true;
@@ -522,19 +523,19 @@ Silver::check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probin
                                 }
                             }
                         }
-             
+
                         std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
 
                         bool independent = false;
 
-                        for (int idx = 0; idx < inter.size() && !independent; idx++) {                                
+                        for (int idx = 0; idx < inter.size() && !independent; idx++) {
                             std::vector<uint32_t> combination = BddSet(inter[idx]).toVector(), complement; independent = true;
 
                             for (int elem = 0; elem < secvar.size(); elem++)
                                 if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                     complement.push_back(secvar[elem]);
 
-                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                                 Bdd simulate = observation;
                                 for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -576,7 +577,7 @@ Silver::check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probin
                             }
                         }
                     }
-           
+
                     std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
 
                     bool independent = false;
@@ -588,7 +589,7 @@ Silver::check_SNI(Circuit &model, std::map<int, Probes> inputs, const int probin
                             if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                 complement.push_back(secvar[elem]);
 
-                        for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                        for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                             Bdd simulate = observation;
                             for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -616,9 +617,9 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
 {
     LACE_ME;
 
-    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes); 
+    std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes);
 
-    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++) 
+    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++)
         if (!robustModel && model[*gate].getType() == "out") positions.push_back(*gate);
 
     int minimal = get_minimal_sharing(inputs);
@@ -637,7 +638,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
     for (int order = 1; order <= probingOrder; order++) {
         std::vector<Node> probes(order);
         std::vector<bool> probemask(positions.size()); std::fill(probemask.begin(), probemask.begin() + order, true);
-        do {  
+        do {
             int probe = 0; for (int idx = 0; idx < probemask.size(); idx++) if (probemask[idx]) probes[probe++] = positions[idx];
 
             int outputs = 0; for (int probe = 0; probe < probes.size(); probe++) if(model[probes[probe]].getType() == "out") outputs++;
@@ -655,7 +656,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
 
                 for (int comb = 1; comb < (1 << extended.size()); comb++) {
                     observation = sylvan::sylvan_true;
-                    for (int elem = 0; elem < extended.size(); elem++) 
+                    for (int elem = 0; elem < extended.size(); elem++)
                         if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
 
                     std::vector<std::vector<Node>> shares(inputs.size());
@@ -684,7 +685,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
                                 }
                             }
                         }
-               
+
                         std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
                         bool independent = false;
 
@@ -703,7 +704,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
                                     if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                         complement.push_back(secvar[elem]);
 
-                                for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                                for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                                     Bdd simulate = observation;
                                     for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -750,7 +751,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
                             }
                         }
                     }
-            
+
                     std::vector<Bdd> inter; inter_vector_combinations_and(intra, 0, Bdd::bddOne(), inter);
 
                     bool independent = false;
@@ -770,7 +771,7 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
                                 if (std::find(combination.begin(), combination.end(), secvar[elem]) == combination.end())
                                     complement.push_back(secvar[elem]);
 
-                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {                            
+                            for (int s = 0; s < (1 << combination.size()) && independent; s++) {
                                 Bdd simulate = observation;
                                 for (int elem = 0; elem < combination.size(); elem++) if (s & (1 << elem)) simulate &= model[combination[elem]].getFunction();
 
@@ -795,19 +796,19 @@ Silver::check_PINI(Circuit &model, std::map<int, Probes> inputs, const int probi
 }
 
 /* Internal helper functions */
-std::vector<Node> 
+std::vector<Node>
 Silver::get_nodes_of_types(Circuit &model, const std::set<std::string> types)
 {
     std::vector<Node> selection;
 
-    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++) 
+    for (auto gate = vertices(model).first; gate != vertices(model).second; gate++)
         if (types.find(model[*gate].getType()) != types.end())
             selection.push_back(*gate);
-  
+
     return selection;
 }
 
-int 
+int
 Silver::get_minimal_sharing(std::map<int, Probes> inputs)
 {
     int minimal = 0;
@@ -846,7 +847,7 @@ Silver::inter_vector_combinations_xor(const std::vector<std::vector<Bdd>> &intra
 
     if (offset < intra.size()) {
         bool balanced = true;
-        for (int idx = 0; idx < intra[offset].size() && balanced; idx++) 
+        for (int idx = 0; idx < intra[offset].size() && balanced; idx++)
             balanced &= inter_vector_combinations_xor(intra, offset + 1, combination ^ intra[offset][idx], varcount);
         if (!balanced) return false;
     } else {

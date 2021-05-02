@@ -1,8 +1,9 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universit√§t Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universit‰t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
- * DOCUMENT: https://eprint.iacr.org/2020/634.pdf
+ * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
+ *           https://eprint.iacr.org/2020/634.pdf
  * -----------------------------------------------------------------
  *
  * Copyright (c) 2020, Pascal Sasdrich
@@ -46,7 +47,7 @@ static void INFO(const std::string info) {
 
 int main (int argc, char * argv[]) {
 
-    /* Variable declarations */    
+    /* Variable declarations */
     Circuit model;
     std::vector<Node> probes;
 
@@ -104,7 +105,7 @@ int main (int argc, char * argv[]) {
     if (probes.size() - 1 != 0) INFO("probing.robust   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("probing.robust   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
-    
+
     /* Standard non-interference */
     probes = Silver::check_NI(model, inputs, order, false);
 
@@ -118,7 +119,7 @@ int main (int argc, char * argv[]) {
     if (probes.size() - 1 != 0) INFO("NI.robust        (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("NI.robust        (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
-    
+
     /* Standard strong non-interference */
     probes = Silver::check_SNI(model, inputs, order, false);
 
@@ -132,7 +133,7 @@ int main (int argc, char * argv[]) {
     if (probes.size() - 1 != 0) INFO("SNI.robust       (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("SNI.robust       (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (VERBOSE > 0) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
-    
+
     /* Standard probe-isolating non-interference */
     probes = Silver::check_PINI(model, inputs, order, false);
 
