@@ -1,5 +1,9 @@
+
+BOOST    ?= /home/work/tools/boost_1_71_0/install
+SYLVAN	 := "./inc/sylvan"
+
 CXX 	 := g++
-CXXFLAGS := -m64 -march=native
+CXXFLAGS := -m64 -march=native -DVERILOG
 LDFLAGS  := -m64
 
 TARGET	 := verify
@@ -14,10 +18,7 @@ INC_DIR  := ./inc
 LIB_DIR	 := ./lib
 OBJ_DIR	 := $(BLD_DIR)/objects
 
-BOOST    := "/mnt/c/Program Files/boost/boost_1_71_0"
-SYLVAN	 := "./inc/sylvan"
-
-LIBRARIES:= -L$(LIB_DIR) -lsylvan
+LIBRARIES:= -L$(LIB_DIR) -lsylvan  -L$(BOOST)/lib -lboost_program_options
 
 # SOURCES  := $(wildcard $(SRC_DIR)/*.cpp)
 SOURCES  := $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
