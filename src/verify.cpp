@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -62,7 +62,7 @@ po::options_description build_argument_parser(
     ("memory", po::value<size_t>(&cfg->MEMORY)->default_value(1*1024*1024*1024ull),
         "RAM (in Bytes) used by Sylvan BDD library.")
 
-    ("verbose", po::value<bool>(&cfg->VERBOSE)->default_value(false),
+    ("verbose", po::value<bool>(&cfg->VERBOSE)->default_value(true),
         "Be verbose (or not) in printing detailed test reports.")
 
     ("verilog", po::value<bool>(&cfg->PARSE_VERILOG)->default_value(false),
@@ -74,13 +74,13 @@ po::options_description build_argument_parser(
     ("verilog-libname",po::value<std::string>(&cfg->LIBNAME)->default_value("NANG45"),
         "Technology library name.")
 
-    ("verilog-design_file",po::value<std::string>(&cfg->DESIGN)->default_value("vlog/aes/AES_Sbox_DOM/2-Synthesized/aes_sbox_dom1.v"),
+    ("verilog-design_file",po::value<std::string>(&cfg->DESIGN)->default_value("test.v"),
         "Verilg source file containing the design.")
 
-    ("verilog-module_name",po::value<std::string>(&cfg->MODULE)->default_value("aes_sbox"),
+    ("verilog-module_name",po::value<std::string>(&cfg->MODULE)->default_value("test"),
         "Module contained within the verilog source to verify.")
 
-    ("insfile",po::value<std::string>(&cfg->INSFILE)->default_value("test/aes/aes_sbox_dom1.nl"),
+    ("insfile",po::value<std::string>(&cfg->INSFILE)->default_value("test.nl"),
         "Instruction list to parse and process. Either externally provided or result of verilog parser")
     ;
 
@@ -105,6 +105,7 @@ int main (int argc, char * argv[]) {
 
     /* Variable declarations */    
     Circuit model;
+    std::vector<clockcycle> cycles;
     std::vector<Node> probes;
 
     int order, minimal = 0;
@@ -128,6 +129,7 @@ int main (int argc, char * argv[]) {
     /* Parse & convert verilog design to instruction list */
     if(cfg.PARSE_VERILOG) {
         INFO("Parsing verilog design " + cfg.DESIGN + " with top module " + cfg.MODULE +"\n");
+
         int res = parse_and_convert_wrapper(
             cfg.LIBFILE, cfg.LIBNAME, cfg.DESIGN, cfg.MODULE, cfg.INSFILE
         );
@@ -137,9 +139,14 @@ int main (int argc, char * argv[]) {
         }
     }
 
+    std::string tran_file = dut.substr(0,dut.find_last_of(".")) + "_tran.nl";
+
+
     /* Parse circuit from text file*/
     INFO("Netlist: " + dut + "\n");
     model = Silver::parse(dut);
+    int res2 = Silver::parse_tran(tran_file, cycles);
+
     if (cfg.VERBOSE) INFO("Parse: " + str(num_vertices(model)) + " gate(s) / " + str(num_edges(model))  + " signal(s)\n");
 
     /* Elabotare circuit model */
@@ -155,19 +162,34 @@ int main (int argc, char * argv[]) {
     order = inputs[minimal].size() - 1;
 
     /* Standard probing security */
-    probes = Silver::check_Probing(model, inputs, order, false);
+    probes = Silver::check_Probing(model, cycles, inputs, order, false, false);
 
     if (probes.size() - 1 != 0) INFO("probing.standard (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("probing.standard (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
 
     /* Robust probing security */
-    probes = Silver::check_Probing(model, inputs, order, true);
+    probes = Silver::check_Probing(model, cycles, inputs, order, true, false);
 
     if (probes.size() - 1 != 0) INFO("probing.robust   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
     else                        INFO("probing.robust   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
     if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
-    
+
+    /* Transitional probing security */
+    probes = Silver::check_Probing(model, cycles, inputs, order, true, true);
+
+    if (probes.size() - 1 != 0) INFO("probing.transitional   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+    else                        INFO("probing.transitional   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+    if (cfg.VERBOSE) { 
+        std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); 
+        for (size_t cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+            if(cycles[cyclecount].probe){
+                std::cout << "(In Cycle: " << cyclecount+1 << ")" << std::endl;
+            }
+        }
+
+    } else { std::cout << std::endl; } 
+
     /* Standard non-interference */
     probes = Silver::check_NI(model, inputs, order, false);
 

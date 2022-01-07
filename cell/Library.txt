@@ -85,6 +85,14 @@ A1 A2
 1
 ZN
 
+Gate
+1 MUX2_X1
+mux
+3
+A B S
+1
+Z
+
 Reg
 1
 DFF_X1
@@ -153,7 +161,3 @@ Reg
 reg
 2 D C
 1 Q
-
-
-
-

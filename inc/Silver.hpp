@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -57,17 +57,26 @@ typedef boost::graph_traits<Circuit>::edge_descriptor Wire;
  */
 typedef std::vector<Node> Probes;
 
+class clockcycle{
+    public:
+    unsigned int probe = 0;
+    
+    std::vector<std::tuple<int,int>> inputs;
+    std::vector<std::tuple<int,int>> transitions;
+};
+
 class Silver {
 
 public:
 
     static Circuit parse(const std::string filePath);
+    static int parse_tran(const std::string filePath, std::vector<clockcycle>& cyclelist);
 
     static std::map<int, std::vector<Node>> elaborate(Circuit &model);
 
     static bool check_Uniform(Circuit &model);
 
-    static std::vector<Node> check_Probing(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
+    static std::vector<Node> check_Probing(Circuit &model, std::vector<clockcycle>& cycles, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel, const bool transitionalModel);
 
     static std::vector<Node> check_NI(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel);
 

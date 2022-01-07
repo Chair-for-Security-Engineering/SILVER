@@ -1,0 +1,28 @@
+Cycle 1
+inputs:
+transitions:
+0 72 # input1[7] output1[7]
+1 97 # input1[6] output1[6]
+2 51 # input1[5] output1[5]
+3 69 # input1[4] output1[4]
+4 71 # input1[3] output1[3]
+5 98 # input1[2] output1[2]
+6 70 # input1[1] output1[1]
+7 68 # input1[0] output1[0]
+8 66 # input2[7] output2[7]
+9 99 # input2[6] output2[6]
+10 67 # input2[5] output2[5]
+11 61 # input2[4] output2[4]
+12 63 # input2[3] output2[3]
+13 100 # input2[2] output2[2]
+14 62 # input2[1] output2[1]
+15 60 # input2[0] output2[0]
+16 58 # input3[7] output3[7]
+17 101 # input3[6] output3[6]
+18 59 # input3[5] output3[5]
+19 53 # input3[4] output3[4]
+20 55 # input3[3] output3[3]
+21 102 # input3[2] output3[2]
+22 54 # input3[1] output3[1]
+23 52 # input3[0] output3[0]
+

@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -48,7 +48,7 @@
 /**
  * @brief Definition of supported unary and binary operations.
  */
-std::set<std::string> unary   = {"out", "reg", "not"};
+std::set<std::string> unary   = {"out", "reg", "not", "buf"};
 std::set<std::string> binary  = {"and", "nand", "or", "nor", "xor", "xnor"};
 
 /**

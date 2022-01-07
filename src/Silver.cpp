@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -82,6 +82,62 @@ Silver::parse(const std::string filePath)
     return model;
 }
 
+int Silver::parse_tran(const std::string filePath, std::vector<clockcycle>& cyclelist){
+    std::string line;
+    std::vector<std::string> tokens;
+    bool input, transition;
+    unsigned int cyclecount = 0;
+
+    // Open the transition file
+    std::ifstream description(filePath);
+    
+    if(description.fail()){throw std::logic_error(filePath + " not found!");}
+
+    // Parse description line by line
+    while(std::getline(description, line)){
+
+        // Check if a new cycle starts
+        if(line.find("Cycle ") != std::string::npos){
+            input = false, transition = false;
+
+            // Parse number from line
+            cyclecount = std::stoi(line.substr(6));
+
+            // Add empty cycles to the cycle list
+            for (size_t i = cyclelist.size(); i < cyclecount; i++){
+                cyclelist.push_back({});
+            }
+                    
+        // Check if input section starts
+        }else if(line.find("inputs:") != std::string::npos){
+            input = true, transition = false;
+
+        // Check if transition section starts
+        }else if(line.find("transitions:") != std::string::npos){ 
+            input = false, transition = true;
+
+        }else{
+            if(!line.empty()){
+
+                // Split line in tokens
+                tokens = split(line, ' ');
+
+                // Add transitional pair to map
+                if(input){
+                    cyclelist.back().inputs.push_back(std::tuple<int,int>{std::stoi(tokens[0]), std::stoi(tokens[1])});
+                }else if(transition){
+                    cyclelist.back().transitions.push_back(std::tuple<int,int>{std::stoi(tokens[0]), std::stoi(tokens[1])});
+                }
+            }
+        }
+    }
+
+    // Close the transition file
+    description.close();
+
+    return 0;
+}
+
 /* Circuit elaboration */
 std::map<int, std::vector<Node>>
 Silver::elaborate(Circuit &model) {
@@ -108,7 +164,7 @@ Silver::elaborate(Circuit &model) {
             model[*node].setFunction(sylvan_ithvar(*node));
         } else if (model[*node].getType() == "ref") {
             model[*node].setFunction(sylvan_ithvar(*node));
-        } else if (model[*node].getType() == "out" || model[*node].getType() == "reg") {
+        } else if (model[*node].getType() == "out" || model[*node].getType() == "reg" || model[*node].getType() == "buf") {
             model[*node].setFunction(model[op1].getFunction());
         } else if (model[*node].getType() == "not" || model[*node].getType() == "regn") {
             model[*node].setFunction(!model[op1].getFunction());
@@ -241,9 +297,11 @@ Silver::check_Uniform(Circuit &model)
 
 /* Probing security */
 std::vector<Node>
-Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel)
+Silver::check_Probing(Circuit &model, std::vector<clockcycle>& cycles, std::map<int, Probes> inputs, const int probingOrder, const bool robustModel, const bool transitionalModel)
 {
     LACE_ME;
+    size_t input_probe = 0;
+    bool feedback_found = false;
 
     std::vector<Node> positions = (robustModel) ? get_nodes_of_types(model, rprobes) : get_nodes_of_types(model, sprobes);
 
@@ -262,7 +320,7 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
         for (int elem = 0; elem < inputs.size(); elem++) if (comb & (1 << elem)) secrets[comb-1] &= secrets[elem];
     }
 
-    int varcount = 0;
+    int varcount = 0, feedback_probe = 0;
     for (auto node = vertices(model).first; node != vertices(model).second; node++)
         if (model[*node].getType() == "in" || model[*node].getType() == "ref") varcount++;
 
@@ -273,21 +331,174 @@ Silver::check_Probing(Circuit &model, std::map<int, Probes> inputs, const int pr
             int probe = 0; for (int idx = 0; idx < bitmask.size(); idx++) if (bitmask[idx]) probes[probe++] = positions[idx];
 
             if (robustModel) {
+
                 Bdd observation = model[probes[0]].getRegisters();
                 for (int probe = 1; probe < probes.size(); probe++)
                     observation &= model[probes[probe]].getRegisters();
 
                 std::vector<uint32_t> extended = BddSet(observation).toVector();
 
-                for (int comb = 1; comb < (1 << extended.size()); comb++) {
-                    observation = sylvan::sylvan_true;
-                    for (int elem = 0; elem < extended.size(); elem++)
-                        if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
+                // Model transitional leakage 
+                if(transitionalModel){
 
-                    bool independent = true;
-                    for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);
-                    //for (int idx = 0; idx < secrets.size(); idx++) independent &= SYNC(mtbdd_statindependence);
-                    if (!independent) return probes;
+                    // Set of transitional probes per clock cycle
+                    std::vector<std::vector<uint32_t>> glitch_probes, transitional_probes;
+                    glitch_probes.resize(cycles.size());   
+                    transitional_probes.resize(cycles.size());   
+
+                    // Perform glitch-extension on feedbacks
+                    for(int elem = 0; elem < extended.size(); elem++){
+                            
+                        // Check if the probe is placed on a primary input
+                        if(model[extended[elem]].getType() == "in"){
+                            feedback_found = false;
+
+                            // Iterate through all entires of the transition list
+                            for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+                                for(std::tuple<int,int> list_entry : cycles[cyclecount].transitions){
+                                        
+                                    if(extended[elem] == std::get<0>(list_entry)){
+                                        feedback_found = true;
+                                        feedback_probe = std::get<1>(list_entry);
+
+                                        if(model[feedback_probe].getType() == "reg"){
+                                            glitch_probes[cyclecount].push_back(feedback_probe);
+                                        }else{
+
+                                            // Glitch-extend the feedback and the resulting probes to the probing list
+                                            Bdd feedback_observation = model[std::get<1>(list_entry)].getRegisters();
+                                            std::vector<uint32_t> feedback_extended = BddSet(feedback_observation).toVector();
+
+                                            for(int feedback_elem = 0; feedback_elem < feedback_extended.size(); feedback_elem++){
+                                                glitch_probes[cyclecount].push_back(feedback_extended[feedback_elem]);
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                }
+                                
+                                if(!feedback_found){
+                                    glitch_probes[cyclecount].push_back(extended[elem]);
+                                }
+                            }
+                        }else{
+                            for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+                                glitch_probes[cyclecount].push_back(extended[elem]);
+                            }
+                        }
+                    }
+
+                    // Perform transition-extension on registers
+                    for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+                        for(int elem = 0; elem < glitch_probes[cyclecount].size(); elem++){
+                                
+                            // Search for register outputs and add its inputs
+                            if(model[glitch_probes[cyclecount][elem]].getType() == "reg"){
+                                    
+                                // Get register input
+                                input_probe = source(*(in_edges(glitch_probes[cyclecount][elem], model).first), model);
+
+                                // Ignore buffers
+                                while(model[input_probe].getType() == "buf"){input_probe = source(*(in_edges(input_probe, model).first), model);}
+
+                                // Add a probe on the feedback signal if the register input is primary input
+                                if(model[input_probe].getType() == "in"){
+                                    feedback_found = false;
+
+                                    for(std::tuple<int,int> list_entry : cycles[cyclecount].transitions){
+                                        if(input_probe == std::get<0>(list_entry)){
+                                            feedback_found = true;
+
+                                            transitional_probes[cyclecount].push_back(std::get<1>(list_entry));
+                                            break;
+                                        }
+                                    }
+
+                                    if(!feedback_found){ 
+                                        transitional_probes[cyclecount].push_back(input_probe);
+                                    }
+                                }else{
+                                    transitional_probes[cyclecount].push_back(input_probe);
+                                }
+                            }
+                            
+                            // Keep the probe on the register output
+                            transitional_probes[cyclecount].push_back(glitch_probes[cyclecount][elem]); 
+                        }
+                    }
+
+                    // Perform transition-extension on primary inputs
+                    for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+                        for(int elem = 0; elem < transitional_probes[cyclecount].size(); elem++){
+
+                            // Check if probe is placed on a primary input
+                            if(model[transitional_probes[cyclecount][elem]].getType() == "in" || model[transitional_probes[cyclecount][elem]].getType() == "ref"){
+                                
+                                // Iterate through all entires of the input list
+                                for(std::tuple<int,int> list_entry : cycles[cyclecount].inputs){
+                                    
+                                    // Check if one of the probes is the element in the list entry                    
+                                    if(transitional_probes[cyclecount][elem] == std::get<0>(list_entry)){
+
+                                        // Replace the probe
+                                        transitional_probes[cyclecount][elem] = std::get<1>(list_entry);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+                        for(int elem = 0; elem < transitional_probes[cyclecount].size(); elem++){
+
+                            // Check if probe is placed on a primary input
+                            if(model[transitional_probes[cyclecount][elem]].getType() == "in" || model[transitional_probes[cyclecount][elem]].getType() == "ref"){
+                                
+                                // Iterate through all entires of the input list
+                                for(std::tuple<int,int> list_entry : cycles[cyclecount].transitions){
+                                    
+                                    // Check if one of the probes is the element in the list entry                    
+                                    if(transitional_probes[cyclecount][elem] == std::get<0>(list_entry)){
+
+                                        // Replace the probe
+                                        transitional_probes[cyclecount].push_back(std::get<1>(list_entry));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        std::sort(transitional_probes[cyclecount].begin(), transitional_probes[cyclecount].end());
+                        transitional_probes[cyclecount].erase(unique(transitional_probes[cyclecount].begin(), transitional_probes[cyclecount].end() ), transitional_probes[cyclecount].end() );
+                    }
+
+                    for(int cyclecount = 0; cyclecount < cycles.size(); cyclecount++){
+						for (int comb = 1ull; comb < (1ull << transitional_probes[cyclecount].size()); comb++) {
+							observation = sylvan::sylvan_true;
+							for (int elem = 0; elem < transitional_probes[cyclecount].size(); elem++)
+								if (comb & (1 << elem)) observation &= model[transitional_probes[cyclecount][elem]].getFunction();
+
+							bool independent = true;
+							for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);
+							if (!independent) {
+								cycles[cyclecount].probe = 1;
+								return probes;
+							}
+						}
+                    }
+                }else{
+
+					for (int comb = 1; comb < (1 << extended.size()); comb++) {
+						observation = sylvan::sylvan_true;
+						for (int elem = 0; elem < extended.size(); elem++)
+							if (comb & (1 << elem)) observation &= model[extended[elem]].getFunction();
+
+						bool independent = true;
+						for (int idx = 0; idx < secrets.size() && independent; idx++) independent &= CALL(mtbdd_statindependence, observation.GetBDD(), varcount, secrets[idx].GetBDD(), varcount);
+						if (!independent) return probes;
+					}
                 }
             } else {
                 Bdd observation = model[probes[0]].getFunction();
