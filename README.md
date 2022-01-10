@@ -37,7 +37,7 @@ Examplary output for `/test/SB1_sel_000.nl` (instruction file) with `--verbose=1
 [     0.011] Elaborate: 127 gate(s) / 133 signal(s)
 [     2.545] probing.standard     (d ≤ 1) -- PASS.  >> Probes: <in:line5,xor:line76>
 [     4.747] probing.robust       (d ≤ 1) -- PASS.  >> Probes: <reg:line50,out:line121>
-[     7.020] probing.transitional (d ≤ 1) -- FAIL.    >> Probes: <reg:line51> (In Cycle: 1)
+[     7.020] probing.transitional (d ≤ 1) -- FAIL.  >> Probes: <reg:line51> (In Cycle: 1)
 [   165.649] NI.standard          (d ≤ 1) -- FAIL.  >> Probes: <xor:line74>
 [   177.068] NI.robust            (d ≤ 1) -- FAIL.  >> Probes: <out:line105>
 [   330.053] SNI.standard         (d ≤ 1) -- FAIL.  >> Probes: <xor:line74>
