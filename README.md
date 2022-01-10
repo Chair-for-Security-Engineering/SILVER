@@ -212,8 +212,8 @@ Please see `LICENSE` for further license instructions.
 
 ## Publications
 D. Knichel, P. Sasdrich, A. Moradi (2020): [SILVER - Statistical Independence and Leakage Verification, ASIACRYPT 2020, pp. 787-816](https://doi.org/10.1007/978-3-030-64837-4_26)
-[(pre-print)](https://eprint.iacr.org/2020/634.pdf)
-N. Müller, D. Knichel, P. Sasdrich, A. Moradi (2022): [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits]\ 
+[(pre-print)](https://eprint.iacr.org/2020/634.pdf)\
+N. Müller, D. Knichel, P. Sasdrich, A. Moradi (2022): [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits](https://eprint.iacr.org/2022/023.pdf)\ 
 
 ## Acknowledgements
 We kindly thank [Ben Marshall](https://github.com/ben-marshall) for adding proper command-line parsing to SILVER.
