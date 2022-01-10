@@ -1,6 +1,6 @@
 # SILVER - Statistical Independence and Leakage Verification (Transition Extended)
 
-This repository contains the source code for the paper [SILVER - Statistical Independence and Leakage Verification](https://eprint.iacr.org/2020/634.pdf) with the transitional leakage extension [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits]. 
+This repository contains the source code for the paper [SILVER - Statistical Independence and Leakage Verification](https://eprint.iacr.org/2020/634.pdf) with the transitional leakage extension [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits](https://eprint.iacr.org/2022/023.pdf). 
 
 ## Features
 SILVER is a framework written in C++ which particulary relies on Reduced Ordered Binary Decision Diagrams (ROBDDs) and the concept of statistical independence of probability distributions. This framework allows to analyze and verify masked implementations (given as verilog design or instruction list) against the following security notions (using different security models as reference):
@@ -213,7 +213,7 @@ Please see `LICENSE` for further license instructions.
 ## Publications
 D. Knichel, P. Sasdrich, A. Moradi (2020): [SILVER - Statistical Independence and Leakage Verification, ASIACRYPT 2020, pp. 787-816](https://doi.org/10.1007/978-3-030-64837-4_26)
 [(pre-print)](https://eprint.iacr.org/2020/634.pdf)\
-N. Müller, D. Knichel, P. Sasdrich, A. Moradi (2022): [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits](https://eprint.iacr.org/2022/023.pdf)\ 
+N. Müller, D. Knichel, P. Sasdrich, A. Moradi (2022): [Transitional Leakage in Theory and Practice - Unveiling Security Flaws in Masked Circuits](https://eprint.iacr.org/2022/023.pdf)
 
 ## Acknowledgements
 We kindly thank [Ben Marshall](https://github.com/ben-marshall) for adding proper command-line parsing to SILVER.
