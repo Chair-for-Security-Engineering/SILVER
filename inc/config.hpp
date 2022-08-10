@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -51,6 +51,17 @@ std::string LIBFILE;
 std::string LIBNAME;
 std::string DESIGN;
 std::string MODULE;
+
+/* Analysis configuration */
+bool PROBING_S;
+bool PROBING_R;
+bool NI_S;
+bool NI_R;
+bool SNI_S;
+bool SNI_R;
+bool PINI_S;
+bool PINI_R;
+bool UNIFORMITY;
 
 } silver_config_t;
 

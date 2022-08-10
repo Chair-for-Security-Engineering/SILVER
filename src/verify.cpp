@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------
- * COMPANY : Ruhr-Universität Bochum, Chair for Security Engineering
+ * COMPANY : Ruhr-Universitï¿½t Bochum, Chair for Security Engineering
  * AUTHOR  : Pascal Sasdrich (pascal.sasdrich@rub.de)
  * DOCUMENT: https://doi.org/10.1007/978-3-030-64837-4_26
  *           https://eprint.iacr.org/2020/634.pdf
@@ -82,6 +82,33 @@ po::options_description build_argument_parser(
 
     ("insfile",po::value<std::string>(&cfg->INSFILE)->default_value("test/aes/aes_sbox_dom1.nl"),
         "Instruction list to parse and process. Either externally provided or result of verilog parser")
+
+    ("disable-probing-standard", po::value<bool>(&cfg->PROBING_S)->default_value(true)->implicit_value(false),
+        "Disables the standard probing security check.")
+
+    ("disable-probing-robust", po::value<bool>(&cfg->PROBING_R)->default_value(true)->implicit_value(false),
+        "Disables the robust probing security check.")
+
+    ("disable-ni-standard", po::value<bool>(&cfg->NI_S)->default_value(true)->implicit_value(false),
+        "Disables the standard NI security check.")
+
+    ("disable-ni-robust", po::value<bool>(&cfg->NI_R)->default_value(true)->implicit_value(false),
+        "Disables the robust NI security check.")
+
+    ("disable-sni-standard", po::value<bool>(&cfg->SNI_S)->default_value(true)->implicit_value(false),
+        "Disables the standard SNI security check.")
+
+    ("disable-sni-robust", po::value<bool>(&cfg->SNI_R)->default_value(true)->implicit_value(false),
+        "Disables the robust SNI security check.")
+
+    ("disable-pini-standard", po::value<bool>(&cfg->PINI_S)->default_value(true)->implicit_value(false),
+        "Disables the standard PINI security check.")
+
+    ("disable-pini-robust", po::value<bool>(&cfg->PINI_R)->default_value(true)->implicit_value(false),
+        "Disables the robust PINI security check.")
+
+    ("disable-uniformity", po::value<bool>(&cfg->UNIFORMITY)->default_value(true)->implicit_value(false),
+        "Disables the uniformity check.")
     ;
 
     return all;
@@ -155,66 +182,84 @@ int main (int argc, char * argv[]) {
     order = inputs[minimal].size() - 1;
 
     /* Standard probing security */
-    probes = Silver::check_Probing(model, inputs, order, false);
+    if (cfg.PROBING_S) {
+        probes = Silver::check_Probing(model, inputs, order, false);
 
-    if (probes.size() - 1 != 0) INFO("probing.standard (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("probing.standard (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("probing.standard (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("probing.standard (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
 
     /* Robust probing security */
-    probes = Silver::check_Probing(model, inputs, order, true);
+    if (cfg.PROBING_R) {
+        probes = Silver::check_Probing(model, inputs, order, true);
 
-    if (probes.size() - 1 != 0) INFO("probing.robust   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("probing.robust   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("probing.robust   (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("probing.robust   (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }   
+    }
     
     /* Standard non-interference */
-    probes = Silver::check_NI(model, inputs, order, false);
+    if (cfg.NI_S) {
+        probes = Silver::check_NI(model, inputs, order, false);
 
-    if (probes.size() - 1 != 0) INFO("NI.standard      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("NI.standard      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("NI.standard      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("NI.standard      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
 
     /* Robust non-interference */
-    probes = Silver::check_NI(model, inputs, order, true);
+    if (cfg.NI_R) {
+        probes = Silver::check_NI(model, inputs, order, true);
 
-    if (probes.size() - 1 != 0) INFO("NI.robust        (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("NI.robust        (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("NI.robust        (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("NI.robust        (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
     
     /* Standard strong non-interference */
-    probes = Silver::check_SNI(model, inputs, order, false);
+    if (cfg.SNI_S) {
+        probes = Silver::check_SNI(model, inputs, order, false);
 
-    if (probes.size() - 1 != 0) INFO("SNI.standard     (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("SNI.standard     (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("SNI.standard     (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("SNI.standard     (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
 
     /* Robust strong non-interference */
-    probes = Silver::check_SNI(model, inputs, order, true);
+    if (cfg.SNI_R) {
+        probes = Silver::check_SNI(model, inputs, order, true);
 
-    if (probes.size() - 1 != 0) INFO("SNI.robust       (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("SNI.robust       (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("SNI.robust       (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("SNI.robust       (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
     
     /* Standard probe-isolating non-interference */
-    probes = Silver::check_PINI(model, inputs, order, false);
+    if (cfg.PINI_S) {
+        probes = Silver::check_PINI(model, inputs, order, false);
 
-    if (probes.size() - 1 != 0) INFO("PINI.standard    (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("PINI.standard    (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("PINI.standard    (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("PINI.standard    (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
 
     /* Robust probe-isolating non-interference */
-    probes = Silver::check_PINI(model, inputs, order, true);
+    if (cfg.PINI_R) {
+        probes = Silver::check_PINI(model, inputs, order, true);
 
-    if (probes.size() - 1 != 0) INFO("PINI.robust      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
-    else                        INFO("PINI.robust      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
-    if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+        if (probes.size() - 1 != 0) INFO("PINI.robust      (d \u2264 " + str(probes.size() - 1) + ") -- \033[1;32mPASS\033[0m.");
+        else                        INFO("PINI.robust      (d \u2264 " + str(probes.size() - 0) + ") -- \033[1;31mFAIL\033[0m.");
+        if (cfg.VERBOSE) { std::cout << "\t>> Probes: "; Silver::print_node_vector(model, probes); } else { std::cout << std::endl; }
+    }
 
     /* Standard uniformity check */
-    bool uniform = Silver::check_Uniform(model);
+    if (cfg.UNIFORMITY) {
+        bool uniform = Silver::check_Uniform(model);
 
-    if (uniform)  INFO("uniformity               -- \033[1;32mPASS\033[0m.\n");
-    else          INFO("uniformity               -- \033[1;31mFAIL\033[0m.\n");
+        if (uniform)  INFO("uniformity               -- \033[1;32mPASS\033[0m.\n");
+        else          INFO("uniformity               -- \033[1;31mFAIL\033[0m.\n");
+    }
 
     /* Remove model graph from memory */
     model.clear();
