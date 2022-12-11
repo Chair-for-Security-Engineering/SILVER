@@ -179,7 +179,7 @@ void ReadNonCommentFromFile(FILE* FileHeader, char* Str, const char* CommentSynt
 void fReadaWord(FILE* F, char* Buffer, char* Attribute)
 {
     //reset Buffer
-	memset(Buffer, 0, Parser_Max_Name_Length);
+	memset(Buffer, 0, 10); //Parser_Max_Name_Length
 
     static char Lastch = 0;
     char        ch = 0;
@@ -201,17 +201,11 @@ void fReadaWord(FILE* F, char* Buffer, char* Attribute)
         {
             Lastch = 0;
 
-            if (ch == 32)
+            if ((ch == 32) || (ch == 13) || (ch == 10) || (ch == 9))
             {
 				if (i && (!BracketOpened))
 					break;
 			}
-			else
-			if ((ch == 13) || (ch == 10) || (ch == 9))
-            {
-                if (i)
-                    break;
-            }
             else if ((ch == '(') || (ch == ')'))
             {
                 if (i)
@@ -791,6 +785,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 	int          TempIndex;
     int*         Buffer_int;
     char*        Str2 = (char*)malloc(Parser_Max_Name_Length * sizeof(char));
+    char*        Str3 = (char*)malloc(Parser_Max_Name_Length * sizeof(char));
     int          Index1, Index2, IndexUpwards;
     int          j;
     int*         IOSignals = NULL;
@@ -847,6 +842,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 			printf("Signal \"%s\" not found\n", Str1);
 			free(IOSignals);
 			free(Str2);
+			free(Str3);
 			return 1;
 		}
 	}
@@ -863,6 +859,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 				printf("Input port \"%s\" cannot be left unconnected\n", Circuit->Signals[SignalIndex]->Name);
 				free(IOSignals);
 				free(Str2);
+				free(Str3);
 				return 1;
 			}
 
@@ -941,10 +938,10 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 
 					for (j = Index1; ((IndexUpwards == 1) && (j <= Index2)) || ((IndexUpwards == -1) && (j >= Index2)); j += IndexUpwards)
 					{
-						sprintf(Str1, "%s[%d]", Str2, j);
+						sprintf(Str3, "%s[%d]", Str2, j);
 
 						for (SignalIndex = 0; SignalIndex < Circuit->NumberOfSignals; SignalIndex++)
-							if (!strcmp(Str1, Circuit->Signals[SignalIndex]->Name))
+							if (!strcmp(Str3, Circuit->Signals[SignalIndex]->Name))
 								break;
 
 						if (SignalIndex < Circuit->NumberOfSignals)
@@ -960,9 +957,10 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 						}
 						else
 						{
-							printf("Signal \"%s\" not found\n", Str1);
+							printf("Signal \"%s\" not found\n", Str3);
 							free(IOSignals);
 							free(Str2);
+							free(Str3);
 							return 1;
 						}
 					}
@@ -973,6 +971,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 					printf("Signal \"%s\" not found\n", strptr);
 					free(IOSignals);
 					free(Str2);
+					free(Str3);
 					return 1;
 				}
 
@@ -985,6 +984,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 			printf("The size of the signal \"%s\" does not match to the connected port\n", Str1);
 			free(IOSignals);
 			free(Str2);
+			free(Str3);
 			return 1;
 		}
 
@@ -1004,7 +1004,9 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 			if (SignalIndex2 >= Circuit->NumberOfConstants)
 				SignalIndex2 -= NumberOfSignalsOffset;
 
-			if (SignalIndex != 0)
+			Circuit->Signals[SignalIndex2]->Type = Parser_SignalType_wire;
+
+			if (SignalIndex != -1)
 			{
 				Buffer_int = (int *)malloc((Circuit->Signals[SignalIndex]->NumberOfInputs + Circuit->Signals[SignalIndex2]->NumberOfInputs) * sizeof(int));
 				memcpy(Buffer_int, Circuit->Signals[SignalIndex]->Inputs, Circuit->Signals[SignalIndex]->NumberOfInputs * sizeof(int));
@@ -1027,7 +1029,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 				{
 					CellIndex = Circuit->Signals[SignalIndex2]->Output;
 					Circuit->Signals[SignalIndex]->Output = CellIndex;
-					if (CellIndex != 0)
+					if (CellIndex != -1)
 					{
 						CellIndex -= NumberOfCellsOffset;
 
@@ -1049,6 +1051,7 @@ int ReadDesignFile_Find_Signal_Name(char* Str1, char SubCircuitRead, int CellTyp
 
 	free(IOSignals);
 	free(Str2);
+	free(Str3);
 	return 0;
 }
 
